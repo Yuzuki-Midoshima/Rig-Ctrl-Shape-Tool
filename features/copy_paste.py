@@ -5,14 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Literal
 
+from ..constants import CurveDisplayAttributes
 from ..errors import InvalidSelectionError, MissingCopyBufferError, UnsupportedShapeError
 from ..services import ConnectionService, CurveService, MayaSceneService, SelectionService
 from ..state import ToolState
-
-DISPLAY_ATTRIBUTES = ("visibility", "overrideEnabled", "overrideRGBColors", "overrideColor",
-                      "overrideColorRGB", "overrideDisplayType", "overrideLevelOfDetail",
-                      "overrideShading", "lineWidth", "alwaysDrawOnTop")
-
 
 class CopyPasteFeature:
     """Own the copy buffer and execute Replace/Add shape workflows."""
@@ -56,7 +52,9 @@ class CopyPasteFeature:
         if self._scene.is_referenced(rig):
             raise UnsupportedShapeError("Referenced Controller shapes cannot be replaced")
         self.cancel_sessions()
-        settings = self._curves.display_settings(rig_shapes[0], DISPLAY_ATTRIBUTES)
+        settings = self._curves.display_settings(
+            rig_shapes[0], CurveDisplayAttributes.ALL
+        )
         try:
             with self._scene.undo_chunk("RigCtrlShapePaste"), self._scene.preserve_selection():
                 if not self._curves.match_transform(visual, rig):

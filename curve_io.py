@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Mapping, Sequence
+from collections.abc import Sequence
 
 import maya.cmds as cmds
 from maya.api import OpenMaya as om

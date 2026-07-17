@@ -89,12 +89,6 @@ class CurveShapeData:
     spans: int
 
 
-@dataclass(frozen=True)
-class PlugConnection:
-    source_plug: str
-    destination_plug: str
-
-
 def clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
     return max(minimum, min(maximum, value))
 

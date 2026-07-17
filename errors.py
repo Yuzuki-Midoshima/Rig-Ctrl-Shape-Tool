@@ -6,16 +6,16 @@ class RigCtrlShapeToolError(Exception):
 
 
 class InvalidSelectionError(RigCtrlShapeToolError):
-    pass
+    """Raised when the active selection cannot satisfy a use case."""
 
 
 class UnsupportedShapeError(RigCtrlShapeToolError):
-    pass
+    """Raised for referenced or unsupported controller shapes."""
 
 
 class MissingCopyBufferError(RigCtrlShapeToolError):
-    pass
+    """Raised when the copied controller no longer exists."""
 
 
 class EditSessionError(RigCtrlShapeToolError):
-    pass
+    """Raised when an edit-session transition is invalid."""

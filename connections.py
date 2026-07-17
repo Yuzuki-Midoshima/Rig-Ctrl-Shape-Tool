@@ -6,42 +6,12 @@ import maya.cmds as cmds
 
 from .maya_utils import long_name, warn
 
-Connection = tuple[str, str]
-
-
 def connection_pairs(node: str) -> list[tuple[str, str]]:
     raw = cmds.listConnections(
         node, source=True, destination=True, plugs=True,
         connections=True, skipConversionNodes=False,
     ) or []
     return list(zip(raw[0::2], raw[1::2]))
-
-
-def incoming_connections(node: str) -> list[Connection]:
-    """Return source/destination plug pairs whose destination belongs to node."""
-    result = []
-    for pair in connection_pairs(node):
-        local = plug_on_node(pair, node)
-        if local and cmds.isConnected(local[1], local[0]):
-            result.append((local[1], local[0]))
-    return result
-
-
-def outgoing_connections(node: str) -> list[Connection]:
-    """Return source/destination plug pairs whose source belongs to node."""
-    result = []
-    for pair in connection_pairs(node):
-        local = plug_on_node(pair, node)
-        if local and cmds.isConnected(local[0], local[1]):
-            result.append((local[0], local[1]))
-    return result
-
-
-def reconnect_connections(connections: list[Connection]) -> None:
-    """Reconnect a previously captured snapshot when both plugs still exist."""
-    for source, destination in connections:
-        if cmds.objExists(source) and cmds.objExists(destination) and not cmds.isConnected(source, destination):
-            cmds.connectAttr(source, destination, force=True)
 
 
 def plug_on_node(pair: tuple[str, str], node: str) -> tuple[str, str] | None:

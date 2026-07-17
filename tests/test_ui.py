@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets
 
 from rig_ctrl_shape_tool.app import _find_existing_window
 from rig_ctrl_shape_tool.ui.color_dialog import ColorPreviewDialog

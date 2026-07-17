@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 
 import maya.cmds as cmds
 
-from ..maya_utils import is_settable, preserve_selection, warn
 from ..domain import TransformValues
+from ..maya_utils import is_settable, preserve_selection, warn
 
 
 class MayaSceneService:

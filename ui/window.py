@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from ..domain import ColorValue
+from ..domain import ColorValue, ColorViewData
 from ..errors import RigCtrlShapeToolError
 from ..features import (
     ColorFeature,
@@ -145,7 +147,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
         line.setFrameShape(QtWidgets.QFrame.Shape.HLine)
         return line
 
-    def _run_user_action(self, action) -> None:
+    def _run_user_action(self, action: Callable[[], None]) -> None:
         try:
             action()
         except RigCtrlShapeToolError as error:
@@ -176,7 +178,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             self.preview_box.setChecked(False)
         self._run_user_action(lambda: self.transform_feature.apply_value(group, axis))
 
-    def _rotate(self, callback) -> None:
+    def _rotate(self, callback: Callable[[], None]) -> None:
         callback()
         self.sync_values()
         self.preview_feature.update_preview()
@@ -204,7 +206,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
         if restored is not None and self._color_dialog:
             self._color_dialog.set_preview_color(self._to_qcolor(restored))
 
-    def _open_color_dialog(self, view_data) -> None:
+    def _open_color_dialog(self, view_data: ColorViewData) -> None:
         colors = [(swatch.controller, self._to_qcolor(swatch.color))
                   for swatch in view_data.current_colors]
         try:
@@ -227,10 +229,6 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
         else:
             self.color_feature.rollback()
         self._color_dialog = None
-
-    def _reject_color_dialog(self) -> None:
-        if self._color_dialog and self._color_dialog.isVisible():
-            self._color_dialog.reject()
 
     def sync_values(self) -> None:
         values = self.controls_feature.current_values()

@@ -1,12 +1,16 @@
 """Visual constants preserving the established compact layout."""
 
+from ..constants import TransformLimits
+
 APPLY_STYLE = "background-color: rgb(77, 99, 120);"
 RESET_STYLE = "background-color: rgb(87, 102, 120);"
 DISCONNECT_STYLE = "background-color: rgb(107, 87, 87);"
 FIELD_RANGES = {
-    "uniform": (-10.0, 10.0), "scale": (-10.0, 10.0),
-    "rotate": (-180.0, 180.0), "move": (-100.0, 100.0),
-    "line_width": (-30.0, 30.0),
+    "uniform": TransformLimits.SCALE,
+    "scale": TransformLimits.SCALE,
+    "rotate": TransformLimits.ROTATE,
+    "move": TransformLimits.MOVE,
+    "line_width": TransformLimits.LINE_WIDTH,
 }
 STANDARD_COLOR_COLUMNS = (
     ("#1A1A1A", "#424242", "#757575", "#9E9E9E", "#D0D0D0", "#F5F5F5"),

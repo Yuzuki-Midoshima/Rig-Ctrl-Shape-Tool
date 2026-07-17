@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
-import unittest
 import os
 import tempfile
+import unittest
 
 import maya.cmds as cmds
 from maya.api import OpenMaya as om
 
 from rig_ctrl_shape_tool.domain import ColorValue
 from rig_ctrl_shape_tool.errors import UnsupportedShapeError
-from rig_ctrl_shape_tool.features import ColorFeature, CopyPasteFeature, PreviewFeature, TransformFeature
+from rig_ctrl_shape_tool.features import (
+    ColorFeature,
+    CopyPasteFeature,
+    DisconnectFeature,
+    PreviewFeature,
+    TransformFeature,
+)
 from rig_ctrl_shape_tool.maya_utils import nurbs_curve_shapes
 from rig_ctrl_shape_tool.services import (
     ColorService, ConnectionService, CurveService, MayaSceneService, SelectionService,
@@ -21,14 +27,17 @@ from rig_ctrl_shape_tool.state import ToolState
 
 class MayaCurveIntegrationTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         import maya.standalone
+
         try:
             maya.standalone.initialize(name="python")
         except RuntimeError:
-            pass
+            # Maya GUI already owns the standalone runtime when tests are
+            # launched from Script Editor.
+            return
 
-    def setUp(self):
+    def setUp(self) -> None:
         cmds.file(new=True, force=True)
         self.state = ToolState()
         self.selection = SelectionService()
@@ -54,17 +63,11 @@ class MayaCurveIntegrationTests(unittest.TestCase):
             point=[*points, points[0]], knot=list(range(5)),
         )
 
-    @staticmethod
-    def _feature_for(state: ToolState) -> CopyPasteFeature:
-        return CopyPasteFeature(
-            state, SelectionService(), CurveService(), ConnectionService(), MayaSceneService()
-        )
-
     def _copy_rig(self, rig: str) -> None:
         cmds.select(rig, replace=True)
         self.feature.copy()
 
-    def test_replace_preserves_multiple_typed_shapes_and_supports_undo_redo(self):
+    def test_replace_preserves_multiple_typed_shapes_and_supports_undo_redo(self) -> None:
         rig = self._open_curve("rig_ctrl")
         visual = self._open_curve("visual_ctrl", 5)
         periodic = self._periodic_curve("periodic_visual")
@@ -87,9 +90,10 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         cmds.redo()
         self.assertEqual(len(nurbs_curve_shapes(rig)), 2)
 
-    def test_rational_curve_weights_survive_typed_round_trip(self):
+    def test_rational_curve_weights_survive_typed_round_trip(self) -> None:
         source = cmds.createNode("transform", name="rational_source")
-        selection = om.MSelectionList(); selection.add(source)
+        selection = om.MSelectionList()
+        selection.add(source)
         parent = selection.getDependNode(0)
         points = om.MPointArray([
             om.MPoint(0, 0, 0, 1.0), om.MPoint(1, 2, 0, 0.5),
@@ -112,7 +116,7 @@ class MayaCurveIntegrationTests(unittest.TestCase):
             (1.0, 0.5, 0.5, 1.0),
         )
 
-    def test_add_moves_outgoing_connection_to_new_controller(self):
+    def test_add_moves_outgoing_connection_to_new_controller(self) -> None:
         rig = self._open_curve("connected_ctrl")
         visual = self._open_curve("add_visual", 5)
         receiver = cmds.createNode("transform", name="receiver")
@@ -128,7 +132,7 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         self.assertNotEqual(source.split(".", 1)[0], rig)
         self.assertTrue(cmds.objExists(source))
 
-    def test_locked_target_rolls_back_failed_replace(self):
+    def test_locked_target_rolls_back_failed_replace(self) -> None:
         rig = self._open_curve("locked_ctrl")
         visual = self._open_curve("locked_visual", 5)
         original_shapes = tuple(nurbs_curve_shapes(rig))
@@ -142,7 +146,13 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         self.assertTrue(cmds.objExists(visual))
         self.assertEqual(tuple(nurbs_curve_shapes(rig)), original_shapes)
 
-    def test_selection_is_restored_when_original_node_survives(self):
+        # A failed tool operation must not leave Maya's Undo queue unusable.
+        marker = cmds.createNode("transform", name="undo_after_error")
+        cmds.move(3.0, 0.0, 0.0, marker)
+        cmds.undo()
+        self.assertEqual(cmds.getAttr(f"{marker}.translateX"), 0.0)
+
+    def test_selection_is_restored_when_original_node_survives(self) -> None:
         rig = self._open_curve("selection_rig")
         visual = self._open_curve("selection_visual", 5)
         keeper = cmds.createNode("transform", name="selection_keeper")
@@ -152,10 +162,10 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         selected = cmds.ls(selection=True, long=True) or []
         self.assertEqual(selected, [cmds.ls(keeper, long=True)[0]])
 
-    def test_referenced_controller_is_rejected_without_scene_changes(self):
+    def test_referenced_controller_is_rejected_without_scene_changes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             reference_file = os.path.join(directory, "referenced_controller.ma")
-            referenced_source = self._open_curve("ref_ctrl")
+            self._open_curve("ref_ctrl")
             cmds.file(rename=reference_file)
             cmds.file(save=True, type="mayaAscii", force=True)
             cmds.file(new=True, force=True)
@@ -170,7 +180,43 @@ class MayaCurveIntegrationTests(unittest.TestCase):
             self.assertTrue(cmds.objExists(visual))
             self.assertTrue(cmds.objExists(referenced))
 
-    def test_color_session_rolls_back_and_committed_color_is_undoable(self):
+    def test_namespaced_controllers_support_replace(self) -> None:
+        cmds.namespace(add="rig")
+        cmds.namespace(add="visual")
+        rig = self._open_curve("rig:ctrl")
+        visual = self._open_curve("visual:shape", 5)
+        self._copy_rig(rig)
+        cmds.select(visual, replace=True)
+
+        self.feature.paste_replace()
+
+        self.assertTrue(cmds.objExists(rig))
+        self.assertFalse(cmds.objExists(visual))
+        self.assertEqual(len(nurbs_curve_shapes(rig)), 1)
+
+    def test_disconnect_is_restored_by_single_undo(self) -> None:
+        controller = self._open_curve("disconnect_ctrl")
+        group = cmds.group(controller, name="disconnect_group")
+        receiver = cmds.createNode("transform", name="disconnect_receiver")
+        cmds.addAttr(controller, longName="driver", attributeType="double")
+        cmds.addAttr(receiver, longName="driven", attributeType="double")
+        source_plug = f"{controller}.driver"
+        destination_plug = f"{receiver}.driven"
+        cmds.connectAttr(source_plug, destination_plug)
+        cmds.select(controller, replace=True)
+        feature = DisconnectFeature(self.selection, self.connections, self.scene)
+
+        feature.disconnect_selected()
+
+        self.assertFalse(
+            cmds.connectionInfo(destination_plug, sourceFromDestination=True)
+        )
+        cmds.undo()
+        restored = f"{group}|{controller}"
+        self.assertTrue(cmds.objExists(restored))
+        self.assertTrue(cmds.isConnected(source_plug, destination_plug))
+
+    def test_color_session_rolls_back_and_committed_color_is_undoable(self) -> None:
         controller = self._open_curve("color_ctrl")
         shape = nurbs_curve_shapes(controller)[0]
         cmds.select(controller, replace=True)
@@ -192,7 +238,7 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         cmds.redo()
         self.assertAlmostEqual(ColorService().capture(shape).rgb[1], 1.0)
 
-    def test_transform_preview_rolls_back_and_commit_is_undoable(self):
+    def test_transform_preview_rolls_back_and_commit_is_undoable(self) -> None:
         controller = self._open_curve("preview_ctrl")
         cmds.select(controller, replace=True)
         transform = TransformFeature(self.state, self.selection, self.scene)
@@ -211,8 +257,33 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         transform.apply()
         committed = cmds.exactWorldBoundingBox(controller)
         self.assertNotEqual(committed, before)
-        cmds.undo()
-        self.assertEqual(cmds.exactWorldBoundingBox(controller), before)
+        for _ in range(3):
+            cmds.undo()
+            self.assertEqual(cmds.exactWorldBoundingBox(controller), before)
+            cmds.redo()
+            self.assertEqual(cmds.exactWorldBoundingBox(controller), committed)
+
+    def test_multiple_controllers_preview_around_independent_centers(self) -> None:
+        first = self._open_curve("multi_first")
+        second = self._open_curve("multi_second", 20)
+        cmds.select([first, second], replace=True)
+        preview = PreviewFeature(self.state, self.selection, self.scene)
+        before = {
+            node: cmds.exactWorldBoundingBox(node)
+            for node in (first, second)
+        }
+        self.state.values.scale = (2.0, 1.0, 1.0)
+
+        preview.begin()
+
+        for node, original in before.items():
+            changed = cmds.exactWorldBoundingBox(node)
+            original_center = (original[0] + original[3]) * 0.5
+            changed_center = (changed[0] + changed[3]) * 0.5
+            self.assertAlmostEqual(changed_center, original_center)
+        preview.rollback()
+        for node, original in before.items():
+            self.assertEqual(cmds.exactWorldBoundingBox(node), original)
 
 
 if __name__ == "__main__":
