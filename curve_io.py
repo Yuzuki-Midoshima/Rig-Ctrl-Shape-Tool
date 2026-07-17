@@ -75,15 +75,14 @@ def apply_shape_display_settings(shape: str, settings: DisplaySettings) -> None:
             continue
 
 
-def match_translation_and_rotation(target: str, source: str) -> bool:
+def match_world_position(target: str, source: str) -> bool:
+    """Move target to source without changing rotation or scale."""
     try:
         translation = cmds.xform(source, query=True, worldSpace=True, translation=True)
-        rotation = cmds.xform(source, query=True, worldSpace=True, rotation=True)
         cmds.xform(target, worldSpace=True, translation=translation)
-        cmds.xform(target, worldSpace=True, rotation=rotation)
         return True
     except RuntimeError as error:
-        warn("Could not match transform. Check locked or connected attributes", error)
+        warn("Could not match position. Check locked or connected attributes", error)
         return False
 
 

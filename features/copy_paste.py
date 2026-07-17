@@ -57,8 +57,8 @@ class CopyPasteFeature:
         )
         try:
             with self._scene.undo_chunk("RigCtrlShapePaste"), self._scene.preserve_selection():
-                if not self._curves.match_transform(visual, rig):
-                    raise RuntimeError("Transform alignment failed")
+                if not self._curves.match_position(visual, rig):
+                    raise RuntimeError("Position alignment failed")
                 definitions = tuple(self._curves.capture(shape) for shape in source_shapes)
                 if mode == "add":
                     target = self._curves.create_add_controller(rig, definitions, settings)

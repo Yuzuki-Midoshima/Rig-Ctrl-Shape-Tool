@@ -132,6 +132,43 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         self.assertNotEqual(source.split(".", 1)[0], rig)
         self.assertTrue(cmds.objExists(source))
 
+    def test_paste_alignment_changes_position_only(self) -> None:
+        rig = self._open_curve("position_rig")
+        visual = self._open_curve("position_visual", 5)
+        cmds.xform(
+            rig,
+            worldSpace=True,
+            translation=(10.0, 20.0, 30.0),
+            rotation=(15.0, 25.0, 35.0),
+        )
+        cmds.xform(
+            visual,
+            worldSpace=True,
+            rotation=(40.0, 50.0, 60.0),
+            scale=(1.5, 2.0, 2.5),
+        )
+        original_rotation = cmds.xform(
+            visual, query=True, worldSpace=True, rotation=True
+        )
+        original_scale = cmds.xform(
+            visual, query=True, relative=True, scale=True
+        )
+
+        self.assertTrue(self.curves.match_position(visual, rig))
+
+        self.assertEqual(
+            cmds.xform(visual, query=True, worldSpace=True, translation=True),
+            cmds.xform(rig, query=True, worldSpace=True, translation=True),
+        )
+        self.assertEqual(
+            cmds.xform(visual, query=True, worldSpace=True, rotation=True),
+            original_rotation,
+        )
+        self.assertEqual(
+            cmds.xform(visual, query=True, relative=True, scale=True),
+            original_scale,
+        )
+
     def test_locked_target_rolls_back_failed_replace(self) -> None:
         rig = self._open_curve("locked_ctrl")
         visual = self._open_curve("locked_visual", 5)
