@@ -76,27 +76,36 @@ def apply_shape_display_settings(shape: str, settings: DisplaySettings) -> None:
 
 
 def align_curve_position(target: str, source: str) -> bool:
-    """Align visible curve CVs without moving the target transform or pivot."""
+    """Align curve centers without moving the target transform or pivot."""
     try:
-        source_position = cmds.xform(
-            source, query=True, worldSpace=True, translation=True
-        )
-        target_position = cmds.xform(
-            target, query=True, worldSpace=True, translation=True
-        )
-        delta = tuple(
-            source_value - target_value
-            for source_value, target_value in zip(source_position, target_position)
-        )
-        cvs = [
+        target_cvs = [
             cv
             for shape in nurbs_curve_shapes(target)
             for cv in cmds.ls(f"{shape}.cv[*]", flatten=True) or []
         ]
-        if not cvs:
-            warn("Could not align position because the target has no curve CVs")
+        source_cvs = [
+            cv
+            for shape in nurbs_curve_shapes(source)
+            for cv in cmds.ls(f"{shape}.cv[*]", flatten=True) or []
+        ]
+        if not target_cvs or not source_cvs:
+            warn("Could not align position because curve CVs are missing")
             return False
-        cmds.move(*delta, cvs, relative=True, worldSpace=True)
+        target_bounds = cmds.exactWorldBoundingBox(target_cvs)
+        source_bounds = cmds.exactWorldBoundingBox(source_cvs)
+        target_center = tuple(
+            (target_bounds[axis] + target_bounds[axis + 3]) * 0.5
+            for axis in range(3)
+        )
+        source_center = tuple(
+            (source_bounds[axis] + source_bounds[axis + 3]) * 0.5
+            for axis in range(3)
+        )
+        delta = tuple(
+            source_value - target_value
+            for source_value, target_value in zip(source_center, target_center)
+        )
+        cmds.move(*delta, target_cvs, relative=True, worldSpace=True)
         return True
     except RuntimeError as error:
         warn("Could not match position. Check locked or connected attributes", error)

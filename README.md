@@ -15,7 +15,7 @@ MayaのNURBS Curveコントローラを非破壊Previewしながら編集するT
 - Real Time Preview、Apply、Cancel、Close時Rollback
 - Color Preview、Current Colors、Apply、Cancel、Override復元
 - Copy、Paste Replace、Paste Add
-- Paste時はTransform／Pivotを動かさず、Curve CVのワールド位置だけを合わせる
+- Paste時はTransform／Pivotを動かさず、Curve Shape中心のワールド位置を合わせる
 - Display設定とConnectionの移行
 - DisconnectとMaya Undoによる復元
 - 項目単位の右クリックApply／Reset
@@ -232,7 +232,7 @@ Color Clamp、項目単位Transform値、Edit Sessionの二重開始、Inactive 
 - Shape中心を一時PivotにしたCV Scale／Rotate
 - 数値欄右クリックの項目別Apply／Reset
 - Copy、Paste Replace、Paste Add
-- Paste時のCV位置合わせ（Transform／Pivot／Rotation／Scale非変更）
+- Paste時のShape中心位置合わせ（Transform／Pivot／Rotation／Scale非変更）
 - Color Preview／Apply／Cancel／Preset
 - Override Color／Display設定／Connection移行
 - Disconnect、Undo、Selection復元

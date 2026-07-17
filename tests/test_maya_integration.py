@@ -147,6 +147,11 @@ class MayaCurveIntegrationTests(unittest.TestCase):
             rotation=(40.0, 50.0, 60.0),
             scale=(1.5, 2.0, 2.5),
         )
+        cmds.xform(
+            visual,
+            worldSpace=True,
+            rotatePivot=(100.0, 50.0, -25.0),
+        )
         original_rotation = cmds.xform(
             visual, query=True, worldSpace=True, rotation=True
         )
@@ -159,10 +164,10 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         original_pivot = cmds.xform(
             visual, query=True, worldSpace=True, rotatePivot=True
         )
-        original_bounds = cmds.exactWorldBoundingBox(visual)
-        rig_translation = cmds.xform(
-            rig, query=True, worldSpace=True, translation=True
-        )
+        visual_cvs = self.selection.controller_cvs(visual)
+        rig_cvs = self.selection.controller_cvs(rig)
+        original_bounds = cmds.exactWorldBoundingBox(visual_cvs)
+        rig_bounds = cmds.exactWorldBoundingBox(rig_cvs)
 
         self.assertTrue(self.curves.align_position(visual, rig))
 
@@ -182,19 +187,16 @@ class MayaCurveIntegrationTests(unittest.TestCase):
             cmds.xform(visual, query=True, relative=True, scale=True),
             original_scale,
         )
-        changed_bounds = cmds.exactWorldBoundingBox(visual)
-        delta = [
-            rig_value - visual_value
-            for rig_value, visual_value in zip(rig_translation, original_translation)
-        ]
+        changed_bounds = cmds.exactWorldBoundingBox(visual_cvs)
         for axis in range(3):
-            original_center = (
-                original_bounds[axis] + original_bounds[axis + 3]
-            ) * 0.5
             changed_center = (
                 changed_bounds[axis] + changed_bounds[axis + 3]
             ) * 0.5
-            self.assertAlmostEqual(changed_center, original_center + delta[axis])
+            rig_center = (
+                rig_bounds[axis] + rig_bounds[axis + 3]
+            ) * 0.5
+            self.assertAlmostEqual(changed_center, rig_center)
+        self.assertNotEqual(changed_bounds, original_bounds)
 
     def test_locked_target_rolls_back_failed_replace(self) -> None:
         rig = self._open_curve("locked_ctrl")
