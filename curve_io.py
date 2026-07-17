@@ -75,11 +75,28 @@ def apply_shape_display_settings(shape: str, settings: DisplaySettings) -> None:
             continue
 
 
-def match_world_position(target: str, source: str) -> bool:
-    """Move target to source without changing rotation or scale."""
+def align_curve_position(target: str, source: str) -> bool:
+    """Align visible curve CVs without moving the target transform or pivot."""
     try:
-        translation = cmds.xform(source, query=True, worldSpace=True, translation=True)
-        cmds.xform(target, worldSpace=True, translation=translation)
+        source_position = cmds.xform(
+            source, query=True, worldSpace=True, translation=True
+        )
+        target_position = cmds.xform(
+            target, query=True, worldSpace=True, translation=True
+        )
+        delta = tuple(
+            source_value - target_value
+            for source_value, target_value in zip(source_position, target_position)
+        )
+        cvs = [
+            cv
+            for shape in nurbs_curve_shapes(target)
+            for cv in cmds.ls(f"{shape}.cv[*]", flatten=True) or []
+        ]
+        if not cvs:
+            warn("Could not align position because the target has no curve CVs")
+            return False
+        cmds.move(*delta, cvs, relative=True, worldSpace=True)
         return True
     except RuntimeError as error:
         warn("Could not match position. Check locked or connected attributes", error)

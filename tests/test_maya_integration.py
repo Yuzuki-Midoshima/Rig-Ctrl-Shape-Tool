@@ -132,7 +132,7 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         self.assertNotEqual(source.split(".", 1)[0], rig)
         self.assertTrue(cmds.objExists(source))
 
-    def test_paste_alignment_changes_position_only(self) -> None:
+    def test_paste_alignment_moves_cvs_without_moving_pivot(self) -> None:
         rig = self._open_curve("position_rig")
         visual = self._open_curve("position_visual", 5)
         cmds.xform(
@@ -153,12 +153,26 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         original_scale = cmds.xform(
             visual, query=True, relative=True, scale=True
         )
+        original_translation = cmds.xform(
+            visual, query=True, worldSpace=True, translation=True
+        )
+        original_pivot = cmds.xform(
+            visual, query=True, worldSpace=True, rotatePivot=True
+        )
+        original_bounds = cmds.exactWorldBoundingBox(visual)
+        rig_translation = cmds.xform(
+            rig, query=True, worldSpace=True, translation=True
+        )
 
-        self.assertTrue(self.curves.match_position(visual, rig))
+        self.assertTrue(self.curves.align_position(visual, rig))
 
         self.assertEqual(
             cmds.xform(visual, query=True, worldSpace=True, translation=True),
-            cmds.xform(rig, query=True, worldSpace=True, translation=True),
+            original_translation,
+        )
+        self.assertEqual(
+            cmds.xform(visual, query=True, worldSpace=True, rotatePivot=True),
+            original_pivot,
         )
         self.assertEqual(
             cmds.xform(visual, query=True, worldSpace=True, rotation=True),
@@ -168,6 +182,19 @@ class MayaCurveIntegrationTests(unittest.TestCase):
             cmds.xform(visual, query=True, relative=True, scale=True),
             original_scale,
         )
+        changed_bounds = cmds.exactWorldBoundingBox(visual)
+        delta = [
+            rig_value - visual_value
+            for rig_value, visual_value in zip(rig_translation, original_translation)
+        ]
+        for axis in range(3):
+            original_center = (
+                original_bounds[axis] + original_bounds[axis + 3]
+            ) * 0.5
+            changed_center = (
+                changed_bounds[axis] + changed_bounds[axis + 3]
+            ) * 0.5
+            self.assertAlmostEqual(changed_center, original_center + delta[axis])
 
     def test_locked_target_rolls_back_failed_replace(self) -> None:
         rig = self._open_curve("locked_ctrl")

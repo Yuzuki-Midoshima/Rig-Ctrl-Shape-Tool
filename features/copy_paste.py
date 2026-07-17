@@ -57,7 +57,7 @@ class CopyPasteFeature:
         )
         try:
             with self._scene.undo_chunk("RigCtrlShapePaste"), self._scene.preserve_selection():
-                if not self._curves.match_position(visual, rig):
+                if not self._curves.align_position(visual, rig):
                     raise RuntimeError("Position alignment failed")
                 definitions = tuple(self._curves.capture(shape) for shape in source_shapes)
                 if mode == "add":

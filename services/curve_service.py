@@ -21,8 +21,8 @@ class CurveService:
     def apply_display_settings(self, shape: str, settings: DisplaySettings) -> None:
         curve_io.apply_shape_display_settings(shape, settings)
 
-    def match_position(self, target: str, source: str) -> bool:
-        return curve_io.match_world_position(target, source)
+    def align_position(self, target: str, source: str) -> bool:
+        return curve_io.align_curve_position(target, source)
 
     def delete_source_if_safe(self, transform: str) -> None:
         curve_io.delete_visual_source_if_safe(transform)
