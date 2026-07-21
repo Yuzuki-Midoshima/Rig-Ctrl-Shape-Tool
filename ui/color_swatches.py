@@ -32,6 +32,7 @@ class CurrentColorsWidget(QtWidgets.QFrame):
             item = self._layout.takeAt(0)
             widget = item.widget()
             if widget:
+                widget.hide()
                 widget.deleteLater()
         for controller, color in colors:
             swatch = QtWidgets.QToolButton(self)

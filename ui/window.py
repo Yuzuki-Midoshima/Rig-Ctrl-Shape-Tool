@@ -207,8 +207,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             self._color_dialog.set_preview_color(self._to_qcolor(restored))
 
     def _open_color_dialog(self, view_data: ColorViewData) -> None:
-        colors = [(swatch.controller, self._to_qcolor(swatch.color))
-                  for swatch in view_data.current_colors]
+        colors = self._dialog_colors(view_data)
         try:
             dialog = ColorPreviewDialog(self._to_qcolor(view_data.initial_color), colors, self)
             self._color_dialog = dialog
@@ -249,6 +248,22 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             for swatch in view_data.current_colors
         ))
 
+    def handle_selection_changed(self) -> None:
+        """Retarget an open color edit session to Maya's current selection."""
+        dialog = self._color_dialog
+        if not dialog or not dialog.isVisible():
+            self.refresh_colors()
+            return
+        try:
+            view_data = self.color_feature.retarget_selection()
+        except RigCtrlShapeToolError:
+            dialog.reject()
+            self.refresh_colors()
+            return
+        dialog.set_current_colors(self._dialog_colors(view_data))
+        dialog.set_preview_color(self._to_qcolor(view_data.initial_color))
+        self.refresh_colors()
+
     def handle_color_state_changed(self) -> None:
         """Refresh color data and close a dialog after external rollback."""
         self.refresh_colors()
@@ -281,6 +296,15 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
     @staticmethod
     def _from_qcolor(value: QtGui.QColor) -> ColorValue:
         return ColorValue.rgb_color((value.redF(), value.greenF(), value.blueF()))
+
+    def _dialog_colors(
+        self,
+        view_data: ColorViewData,
+    ) -> tuple[tuple[str, QtGui.QColor], ...]:
+        return tuple(
+            (swatch.controller, self._to_qcolor(swatch.color))
+            for swatch in view_data.current_colors
+        )
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         if self._color_dialog:

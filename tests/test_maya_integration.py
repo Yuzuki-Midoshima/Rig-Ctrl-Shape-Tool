@@ -304,6 +304,30 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         cmds.redo()
         self.assertAlmostEqual(ColorService().capture(shape).rgb[1], 1.0)
 
+    def test_color_session_retargets_after_selection_changes(self) -> None:
+        first = self._open_curve("first_color_ctrl")
+        second = self._open_curve("second_color_ctrl")
+        first_shape = nurbs_curve_shapes(first)[0]
+        second_shape = nurbs_curve_shapes(second)[0]
+        colors = ColorService()
+        first_original = colors.capture(first_shape)
+        second_original = colors.capture(second_shape)
+        feature = ColorFeature(self.state, self.selection, colors, self.scene)
+
+        cmds.select(first, replace=True)
+        feature.begin_edit()
+        feature.update_preview(ColorValue.rgb_color((1.0, 0.0, 0.0)))
+        cmds.select(second, replace=True)
+        view_data = feature.retarget_selection()
+
+        self.assertEqual(colors.capture(first_shape), first_original)
+        self.assertEqual(view_data.current_colors[0].controller, f"|{second}")
+        feature.update_preview(ColorValue.rgb_color((0.0, 1.0, 0.0)))
+        self.assertEqual(colors.capture(first_shape), first_original)
+        self.assertAlmostEqual(colors.capture(second_shape).rgb[1], 1.0)
+        feature.rollback()
+        self.assertEqual(colors.capture(second_shape), second_original)
+
     def test_transform_preview_rolls_back_and_commit_is_undoable(self) -> None:
         controller = self._open_curve("preview_ctrl")
         cmds.select(controller, replace=True)

@@ -78,7 +78,12 @@ class ColorFeature:
     def rollback(self) -> None:
         self._finish(False)
 
-    def _finish(self, accepted: bool) -> None:
+    def retarget_selection(self) -> ColorViewData:
+        """Rollback the old preview and begin editing the current selection."""
+        self._finish(False, notify=False)
+        return self.begin_edit()
+
+    def _finish(self, accepted: bool, *, notify: bool = True) -> None:
         session = self._state.color_session
         if not session or not session.lifecycle.is_active:
             return
@@ -97,7 +102,8 @@ class ColorFeature:
                 self._scene.close_undo()
                 session.undo_open = False
             self._state.color_session = None
-            self.colors_changed()
+            if notify:
+                self.colors_changed()
 
     def reset(self) -> ColorValue | None:
         session = self._state.color_session

@@ -47,13 +47,32 @@ class UiInteractionTests(unittest.TestCase):
         dialog = ColorPreviewDialog(QtGui.QColor("yellow"), colors)
         dialog.show()
         self.app.processEvents()
-        swatches = dialog.current_colors.findChildren(QtWidgets.QToolButton)
+        swatches = [
+            button
+            for button in dialog.current_colors.findChildren(QtWidgets.QToolButton)
+            if button.isVisible()
+        ]
         labels = {button.text() for button in dialog.findChildren(QtWidgets.QPushButton)}
         self.assertEqual([button.toolTip() for button in swatches], [item[0] for item in colors])
         self.assertTrue({"Apply", "Cancel"}.issubset(labels))
         self.assertFalse(dialog.isModal())
         self.assertEqual(
             dialog.windowModality(), QtCore.Qt.WindowModality.NonModal
+        )
+        updated = (
+            ("green_ctrl", QtGui.QColor("green")),
+            ("cyan_ctrl", QtGui.QColor("cyan")),
+        )
+        dialog.set_current_colors(updated)
+        self.app.processEvents()
+        swatches = [
+            button
+            for button in dialog.current_colors.findChildren(QtWidgets.QToolButton)
+            if button.isVisible()
+        ]
+        self.assertEqual(
+            [button.toolTip() for button in swatches],
+            [item[0] for item in updated],
         )
         dialog.close()
 

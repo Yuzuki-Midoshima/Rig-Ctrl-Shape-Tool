@@ -171,6 +171,13 @@ class ColorPreviewDialog(QtWidgets.QDialog):
         self.picker.setCurrentColor(color)
         del blocker
 
+    def set_current_colors(
+        self,
+        colors: Sequence[tuple[str, QtGui.QColor]],
+    ) -> None:
+        """Replace swatches after Maya's controller selection changes."""
+        self.current_colors.set_colors(colors)
+
     def place_next_to(self, window: QtWidgets.QWidget) -> None:
         screen = window.screen() or QtWidgets.QApplication.primaryScreen()
         target = window.frameGeometry().topRight() + QtCore.QPoint(10, 0)

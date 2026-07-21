@@ -82,7 +82,10 @@ def show() -> RigCtrlShapeWindow:
         parent=parent,
     )
     color.colors_changed = window.handle_color_state_changed
-    state.window.event_jobs = window_service.watch_scene(window.refresh_colors)
+    state.window.event_jobs = window_service.watch_scene(
+        window.refresh_colors,
+        window.handle_selection_changed,
+    )
 
     def close() -> None:
         if state.window.closing:
