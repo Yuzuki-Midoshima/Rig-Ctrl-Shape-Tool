@@ -6,8 +6,8 @@ from collections.abc import Callable
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from ..domain import ColorValue, ColorViewData
-from ..errors import RigCtrlShapeToolError
+from ..core.domain import ColorValue, ColorViewData
+from ..core.errors import RigCtrlShapeToolError
 from ..features import (
     ColorFeature,
     ControlsFeature,

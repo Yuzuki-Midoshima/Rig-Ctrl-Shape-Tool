@@ -5,10 +5,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Literal
 
-from ..constants import CurveDisplayAttributes
-from ..errors import InvalidSelectionError, MissingCopyBufferError, UnsupportedShapeError
+from ..core.constants import CurveDisplayAttributes
+from ..core.errors import (
+    InvalidSelectionError,
+    MissingCopyBufferError,
+    UnsupportedShapeError,
+)
+from ..core.state import ToolState
 from ..services import ConnectionService, CurveService, MayaSceneService, SelectionService
-from ..state import ToolState
 
 class CopyPasteFeature:
     """Own the copy buffer and execute Replace/Add shape workflows."""

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from ..core.state import ToolState
 from ..services import MayaSceneService, SelectionService
-from ..state import ToolState
 
 
 class PreviewFeature:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .. import connections
+from ..maya import connections
 
 
 class ConnectionService:

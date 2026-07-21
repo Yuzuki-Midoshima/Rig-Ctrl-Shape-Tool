@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from .. import curve_io
-from ..domain import CurveShapeData, DisplaySettings
+from ..core.domain import CurveShapeData, DisplaySettings
+from ..maya import curve_io
 
 
 class CurveService:

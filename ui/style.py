@@ -1,6 +1,6 @@
 """Visual constants preserving the established compact layout."""
 
-from ..constants import TransformLimits
+from ..core.constants import TransformLimits
 
 APPLY_STYLE = "background-color: rgb(77, 99, 120);"
 RESET_STYLE = "background-color: rgb(87, 102, 120);"

@@ -2,10 +2,10 @@
 
 import unittest
 
-from rig_ctrl_shape_tool.domain import ColorValue, SessionStatus, TransformValues
-from rig_ctrl_shape_tool.errors import EditSessionError
-from rig_ctrl_shape_tool.sessions import EditSessionLifecycle
-from rig_ctrl_shape_tool.logic import isolated_transform_values
+from rig_ctrl_shape_tool.core.domain import ColorValue, SessionStatus, TransformValues
+from rig_ctrl_shape_tool.core.errors import EditSessionError
+from rig_ctrl_shape_tool.core.sessions import EditSessionLifecycle
+from rig_ctrl_shape_tool.core.transform_math import isolated_transform_values
 
 
 class ColorLogicTests(unittest.TestCase):

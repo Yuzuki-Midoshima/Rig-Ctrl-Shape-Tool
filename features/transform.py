@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
-from ..domain import TransformValues
-from ..errors import InvalidSelectionError
-from ..logic import isolated_transform_values
+from ..core.domain import TransformValues
+from ..core.errors import InvalidSelectionError
+from ..core.state import ToolState
+from ..core.transform_math import isolated_transform_values
 from ..services import MayaSceneService, SelectionService
-from ..state import ToolState
 
 
 class TransformFeature:

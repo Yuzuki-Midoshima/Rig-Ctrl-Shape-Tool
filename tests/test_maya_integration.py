@@ -9,8 +9,9 @@ import unittest
 import maya.cmds as cmds
 from maya.api import OpenMaya as om
 
-from rig_ctrl_shape_tool.domain import ColorValue
-from rig_ctrl_shape_tool.errors import UnsupportedShapeError
+from rig_ctrl_shape_tool.core.domain import ColorValue
+from rig_ctrl_shape_tool.core.errors import UnsupportedShapeError
+from rig_ctrl_shape_tool.core.state import ToolState
 from rig_ctrl_shape_tool.features import (
     ColorFeature,
     CopyPasteFeature,
@@ -18,11 +19,10 @@ from rig_ctrl_shape_tool.features import (
     PreviewFeature,
     TransformFeature,
 )
-from rig_ctrl_shape_tool.maya_utils import nurbs_curve_shapes
+from rig_ctrl_shape_tool.maya.utils import nurbs_curve_shapes
 from rig_ctrl_shape_tool.services import (
     ColorService, ConnectionService, CurveService, MayaSceneService, SelectionService,
 )
-from rig_ctrl_shape_tool.state import ToolState
 
 
 class MayaCurveIntegrationTests(unittest.TestCase):

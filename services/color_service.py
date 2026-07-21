@@ -6,8 +6,8 @@ from collections.abc import Sequence
 
 import maya.cmds as cmds
 
-from ..domain import ColorMode, ColorOverrideState, ColorValue
-from ..maya_utils import is_settable
+from ..core.domain import ColorMode, ColorOverrideState, ColorValue
+from ..maya.utils import is_settable
 
 
 class ColorService:

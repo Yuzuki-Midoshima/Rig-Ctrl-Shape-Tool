@@ -75,20 +75,24 @@ rig_ctrl_shape_tool/
 ├─ launch.py                 通常起動
 ├─ dev_launch.py             開発時の再読込起動
 ├─ app.py                    Composition Root
-├─ state.py                  アプリケーション実行時状態
-├─ domain.py                 Maya／Qt非依存の値オブジェクト
-├─ sessions.py               編集Session状態遷移
-├─ logic.py                  Maya非依存の計算
-├─ maya_utils.py             Maya共通Query／Context Manager
-├─ curve_io.py               Curve永続化Adapter
-├─ connections.py            Connection Adapter
+├─ core/                     Maya／Qt非依存
+│  ├─ domain.py              値オブジェクト
+│  ├─ state.py               アプリケーション実行時状態
+│  ├─ sessions.py            編集Session状態遷移
+│  ├─ transform_math.py      Transform入力の純粋計算
+│  ├─ errors.py              回復可能なUse Case例外
+│  └─ constants.py           表示属性と数値範囲
 ├─ features/                 Use Case
 ├─ services/                 Maya境界Facade
+├─ maya/                     Maya固有の低水準Adapter
+│  ├─ utils.py               共通Query／Context Manager
+│  ├─ curve_io.py            Curve Capture／再生成
+│  └─ connections.py         Connection操作
 ├─ ui/                       Widget／Layout／Signal
 └─ tests/                    Pure／Maya統合／UI回帰テスト
 ```
 
-`curve_io.py`と`connections.py`は低水準のMaya Adapterです。Featureはこれらを直接呼ばず、`CurveService`と`ConnectionService`を通して利用します。
+`maya/curve_io.py`と`maya/connections.py`は低水準Adapterです。Featureはこれらを直接呼ばず、`CurveService`と`ConnectionService`を通して利用します。`core/`はMayaもQtもimportしないため、設計の中心をDCC環境から独立して読めます。
 
 ## Domain
 
@@ -188,7 +192,7 @@ DI Container、Factory、抽象Repository、Interface階層、イベントバス
 
 ### Mirror
 
-Mirror計算を`logic.py`、選択検証と操作順序を`MirrorFeature`、CV書込みを`MayaSceneService`へ配置します。UIはFeatureの公開APIへSignalを接続します。
+Mirror計算を`core/transform_math.py`、選択検証と操作順序を`MirrorFeature`、CV書込みを`MayaSceneService`へ配置します。UIはFeatureの公開APIへSignalを接続します。
 
 ### Preset
 
@@ -279,5 +283,5 @@ Mirrorは純粋計算＋Feature、Preset／JSONはDomain変換＋ファイルSer
 
 - Maya GUIの完全自動操作テストはなく、ViewportとDialog操作は手動確認が必要
 - Maya standalone終了時にAutodesk CERログ警告とOpenMayaのSWIG警告が出る環境がある
-- `curve_io.py`と`connections.py`はMaya API都合の手続き処理が多く、Maya仕様変更時は統合テスト更新が必要
+- `maya/curve_io.py`と`maya/connections.py`はMaya API都合の手続き処理が多く、Maya仕様変更時は統合テスト更新が必要
 - Preset永続化を追加する場合、Schema VersionとMigration方針が必要

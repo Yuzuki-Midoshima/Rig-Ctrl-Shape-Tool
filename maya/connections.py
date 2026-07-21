@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import maya.cmds as cmds
 
-from .maya_utils import long_name, warn
+from .utils import long_name, warn
 
 def connection_pairs(node: str) -> list[tuple[str, str]]:
     raw = cmds.listConnections(

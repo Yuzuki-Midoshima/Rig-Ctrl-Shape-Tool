@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from PySide6 import QtCore, QtWidgets
 
+from .core.state import ToolState
 from .features import (
     ColorFeature,
     ControlsFeature,
@@ -12,7 +13,7 @@ from .features import (
     PreviewFeature,
     TransformFeature,
 )
-from .maya_utils import maya_main_window
+from .maya.utils import maya_main_window
 from .services import (
     ColorService,
     ConnectionService,
@@ -21,7 +22,6 @@ from .services import (
     SelectionService,
     WindowService,
 )
-from .state import ToolState
 from .ui import RigCtrlShapeWindow
 
 

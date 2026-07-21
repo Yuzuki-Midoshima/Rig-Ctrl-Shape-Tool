@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from ..errors import InvalidSelectionError, UnsupportedShapeError
+from ..core.errors import InvalidSelectionError, UnsupportedShapeError
 from ..services import ConnectionService, MayaSceneService, SelectionService
 
 

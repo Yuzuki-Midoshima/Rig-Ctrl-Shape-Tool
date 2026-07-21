@@ -7,8 +7,8 @@ from collections.abc import Sequence
 import maya.cmds as cmds
 from maya.api import OpenMaya as om
 
-from .domain import CurveForm, CurveShapeData, DisplaySettings
-from .maya_utils import is_settable, long_name, nurbs_curve_shapes, safe_get_attr, warn
+from ..core.domain import CurveForm, CurveShapeData, DisplaySettings
+from .utils import is_settable, long_name, nurbs_curve_shapes, safe_get_attr, warn
 
 
 def _curve_function(shape: str) -> om.MFnNurbsCurve:

@@ -7,8 +7,8 @@ from contextlib import contextmanager
 
 import maya.cmds as cmds
 
-from ..domain import TransformValues
-from ..maya_utils import is_settable, preserve_selection, warn
+from ..core.domain import TransformValues
+from ..maya.utils import is_settable, preserve_selection, warn
 
 
 class MayaSceneService:

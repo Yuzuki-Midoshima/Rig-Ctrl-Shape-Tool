@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from ..domain import ColorSwatchData, ColorValue, ColorViewData
-from ..errors import EditSessionError, InvalidSelectionError
+from ..core.domain import ColorSwatchData, ColorValue, ColorViewData
+from ..core.errors import EditSessionError, InvalidSelectionError
+from ..core.state import ColorSession, ToolState
 from ..services import ColorService, MayaSceneService, SelectionService
-from ..state import ColorSession, ToolState
 
 
 class ColorFeature:

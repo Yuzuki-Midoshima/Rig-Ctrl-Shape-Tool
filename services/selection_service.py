@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .. import maya_utils
+from ..maya import utils as maya_utils
 
 
 class SelectionService:
