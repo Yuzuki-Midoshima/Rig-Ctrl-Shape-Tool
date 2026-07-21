@@ -20,6 +20,7 @@ class ColorPreviewDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setModal(False)
+        self.setWindowModality(QtCore.Qt.WindowModality.NonModal)
         self.setWindowTitle("Controller Shape Color")
         self.resize(500, 520)
         self.setMinimumSize(440, 460)

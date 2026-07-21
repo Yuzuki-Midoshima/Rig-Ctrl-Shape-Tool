@@ -14,6 +14,7 @@ MayaのNURBS Curveコントローラを非破壊Previewしながら編集するT
 - Line Width編集
 - Real Time Preview、Apply、Cancel、Close時Rollback
 - Color Preview、Current Colors、Apply、Cancel、Override復元
+- Color Dialog表示中もMaya Viewport／Outlinerを操作可能
 - Copy、Paste Replace、Paste Add
 - Paste時はTransform／Pivotを動かさず、Curve Shape中心のワールド位置を合わせる
 - Display設定とConnectionの移行

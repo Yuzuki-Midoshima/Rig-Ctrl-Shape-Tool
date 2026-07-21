@@ -217,7 +217,9 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             )
             dialog.finished.connect(self._finish_color_dialog)
             dialog.place_next_to(self)
-            dialog.open()
+            # QDialog.open() enforces window modality even when setModal(False)
+            # was requested. show() keeps Maya interactive during color preview.
+            dialog.show()
         except Exception:
             self.color_feature.rollback()
             self._color_dialog = None

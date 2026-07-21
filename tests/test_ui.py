@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from rig_ctrl_shape_tool.app import _find_existing_window
 from rig_ctrl_shape_tool.ui.color_dialog import ColorPreviewDialog
@@ -45,10 +45,16 @@ class UiInteractionTests(unittest.TestCase):
                   ("red_ctrl", QtGui.QColor("red")),
                   ("blue_ctrl", QtGui.QColor("blue")))
         dialog = ColorPreviewDialog(QtGui.QColor("yellow"), colors)
+        dialog.show()
+        self.app.processEvents()
         swatches = dialog.current_colors.findChildren(QtWidgets.QToolButton)
         labels = {button.text() for button in dialog.findChildren(QtWidgets.QPushButton)}
         self.assertEqual([button.toolTip() for button in swatches], [item[0] for item in colors])
         self.assertTrue({"Apply", "Cancel"}.issubset(labels))
+        self.assertFalse(dialog.isModal())
+        self.assertEqual(
+            dialog.windowModality(), QtCore.Qt.WindowModality.NonModal
+        )
         dialog.close()
 
     def test_existing_top_level_window_is_found(self) -> None:
