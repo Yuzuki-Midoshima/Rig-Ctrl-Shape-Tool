@@ -6,6 +6,20 @@ import maya.cmds as cmds
 
 from .utils import long_name, warn
 
+
+DEFAULT_TRANSFORM_ATTRIBUTES = (
+    "translateX",
+    "translateY",
+    "translateZ",
+    "rotateX",
+    "rotateY",
+    "rotateZ",
+    "scaleX",
+    "scaleY",
+    "scaleZ",
+    "visibility",
+)
+
 def connection_pairs(node: str) -> list[tuple[str, str]]:
     raw = cmds.listConnections(
         node, source=True, destination=True, plugs=True,
@@ -96,6 +110,19 @@ def hide_user_defined_attributes(node: str) -> None:
             cmds.setAttr(plug, channelBox=False)
         except RuntimeError as error:
             warn(f"Could not hide user-defined attribute ({plug})", error)
+
+
+def show_default_transform_attributes(node: str) -> None:
+    """Restore the standard Channel Box controls on a detached transform."""
+    if cmds.nodeType(node) != "transform":
+        return
+    for attribute in DEFAULT_TRANSFORM_ATTRIBUTES:
+        plug = f"{node}.{attribute}"
+        try:
+            cmds.setAttr(plug, lock=False)
+            cmds.setAttr(plug, keyable=True)
+        except RuntimeError as error:
+            warn(f"Could not show default transform attribute ({plug})", error)
 
 
 def unparent_to_world(controller: str) -> str:

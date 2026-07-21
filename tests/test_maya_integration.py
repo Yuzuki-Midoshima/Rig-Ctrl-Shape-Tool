@@ -271,6 +271,7 @@ class MayaCurveIntegrationTests(unittest.TestCase):
             keyable=True,
         )
         cmds.addAttr(receiver, longName="driven", attributeType="double")
+        cmds.setAttr(f"{controller}.translateX", keyable=False)
         source_plug = f"{controller}.driver"
         destination_plug = f"{receiver}.driven"
         cmds.connectAttr(source_plug, destination_plug)
@@ -286,11 +287,13 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         disconnected_plug = f"{disconnected}.driver"
         self.assertFalse(cmds.getAttr(disconnected_plug, keyable=True))
         self.assertFalse(cmds.getAttr(disconnected_plug, channelBox=True))
+        self.assertTrue(cmds.getAttr(f"{disconnected}.translateX", keyable=True))
         cmds.undo()
         restored = f"{group}|{controller}"
         self.assertTrue(cmds.objExists(restored))
         self.assertTrue(cmds.isConnected(source_plug, destination_plug))
         self.assertTrue(cmds.getAttr(source_plug, keyable=True))
+        self.assertFalse(cmds.getAttr(f"{restored}.translateX", keyable=True))
 
     def test_color_session_rolls_back_and_committed_color_is_undoable(self) -> None:
         controller = self._open_curve("color_ctrl")

@@ -31,5 +31,6 @@ class DisconnectFeature:
                 self._connections.unlock(node)
                 self._connections.disconnect(node)
                 self._connections.hide_user_attributes(node)
+            self._connections.show_default_attributes(controller)
             controller = self._connections.unparent(controller)
             self._connections.rename(controller)
