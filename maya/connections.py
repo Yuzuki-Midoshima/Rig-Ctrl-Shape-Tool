@@ -87,6 +87,17 @@ def disconnect_node_connections(node: str) -> None:
             warn(f"Could not disconnect {connection[0]} -> {connection[1]}", error)
 
 
+def hide_user_defined_attributes(node: str) -> None:
+    """Hide disconnected rig controls without deleting their authored data."""
+    for attribute in cmds.listAttr(node, userDefined=True) or []:
+        plug = f"{node}.{attribute}"
+        try:
+            cmds.setAttr(plug, keyable=False)
+            cmds.setAttr(plug, channelBox=False)
+        except RuntimeError as error:
+            warn(f"Could not hide user-defined attribute ({plug})", error)
+
+
 def unparent_to_world(controller: str) -> str:
     if not cmds.listRelatives(controller, parent=True, fullPath=True):
         return controller

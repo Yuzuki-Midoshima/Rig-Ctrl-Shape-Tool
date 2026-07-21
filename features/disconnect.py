@@ -30,5 +30,6 @@ class DisconnectFeature:
             for node in [controller, *self._selection.curve_shapes(controller)]:
                 self._connections.unlock(node)
                 self._connections.disconnect(node)
+                self._connections.hide_user_attributes(node)
             controller = self._connections.unparent(controller)
             self._connections.rename(controller)
