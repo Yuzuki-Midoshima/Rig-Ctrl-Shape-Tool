@@ -40,6 +40,23 @@ class UiInteractionTests(unittest.TestCase):
         self.assertAlmostEqual(field._step_for_position(5), 0.1)
         self.assertAlmostEqual(field._step_for_position(8), 0.0001)
 
+    def test_spinbox_value_change_emits_without_losing_focus(self) -> None:
+        control = NumericControl(
+            (1.0, 1.0, 1.0),
+            (0.0, 10.0),
+            context_label="Scale",
+        )
+        changes = []
+        control.valuesChanged.connect(changes.append)
+
+        control.fields[1].setValue(2.5)
+
+        self.assertEqual(changes, [(1.0, 2.5, 1.0)])
+        self.assertEqual(
+            control.sliders[1].value(),
+            round(2.5 * control._SLIDER_FACTOR),
+        )
+
     def test_color_dialog_has_current_colors_and_explicit_actions(self) -> None:
         colors = (("yellow_ctrl", QtGui.QColor("yellow")),
                   ("red_ctrl", QtGui.QColor("red")),

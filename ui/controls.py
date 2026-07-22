@@ -89,7 +89,7 @@ class NumericControl(QtWidgets.QWidget):
             slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
             slider.setRange(round(limits[0] * self._SLIDER_FACTOR), round(limits[1] * self._SLIDER_FACTOR))
             slider.setValue(round(value * self._SLIDER_FACTOR))
-            field.editingFinished.connect(self._from_fields)
+            field.valueChanged.connect(self._from_fields)
             slider.valueChanged.connect(self._from_sliders)
             self.fields.append(field)
             self.sliders.append(slider)
@@ -152,7 +152,7 @@ class NumericControl(QtWidgets.QWidget):
         finally:
             self._syncing = False
 
-    def _from_fields(self) -> None:
+    def _from_fields(self, _value: float | None = None) -> None:
         if self._syncing:
             return
         self.set_values(self.values())
