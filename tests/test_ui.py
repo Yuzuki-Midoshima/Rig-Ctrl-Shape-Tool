@@ -91,6 +91,11 @@ class UiInteractionTests(unittest.TestCase):
             [button.toolTip() for button in swatches],
             [item[0] for item in updated],
         )
+        previewed = []
+        dialog.colorPreviewed.connect(previewed.append)
+        swatches[1].click()
+        self.assertEqual(previewed[-1].name(), QtGui.QColor("cyan").name())
+        self.assertEqual(dialog.picker.currentColor().name(), QtGui.QColor("cyan").name())
         dialog.close()
 
     def test_existing_top_level_window_is_found(self) -> None:

@@ -162,8 +162,10 @@ class ColorPreviewDialog(QtWidgets.QDialog):
         return super().eventFilter(watched, event)
 
     def select_color(self, color: QtGui.QColor) -> None:
+        """Select a swatch and explicitly send it to the scene preview."""
         self._stop_custom_edit()
-        self.picker.setCurrentColor(color)
+        self.set_preview_color(color)
+        self.colorPreviewed.emit(QtGui.QColor(color))
 
     def set_preview_color(self, color: QtGui.QColor) -> None:
         """Update the picker display without reapplying color to the scene."""
