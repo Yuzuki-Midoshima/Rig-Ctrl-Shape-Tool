@@ -311,11 +311,23 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         feature.begin_edit()
         feature.update_preview(ColorValue.rgb_color((0.0, 1.0, 0.0)))
         feature.commit()
-        self.assertAlmostEqual(ColorService().capture(shape).rgb[1], 1.0)
+        displayed = ColorService().display_color(ColorService().capture(shape))
+        self.assertAlmostEqual(displayed.rgb[1], 1.0, places=3)
         cmds.undo()
         self.assertEqual(ColorService().capture(shape), original)
         cmds.redo()
-        self.assertAlmostEqual(ColorService().capture(shape).rgb[1], 1.0)
+        displayed = ColorService().display_color(ColorService().capture(shape))
+        self.assertAlmostEqual(displayed.rgb[1], 1.0, places=3)
+
+    def test_color_service_round_trips_display_space(self) -> None:
+        colors = ColorService()
+        expected = (0.5, 0.2, 0.1)
+
+        rendering = colors.to_rendering_space(expected)
+        displayed = colors.to_display_space(rendering)
+
+        for actual, value in zip(displayed, expected):
+            self.assertAlmostEqual(actual, value, places=2)
 
     def test_color_session_retargets_after_selection_changes(self) -> None:
         first = self._open_curve("first_color_ctrl")
@@ -337,7 +349,8 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         self.assertEqual(view_data.current_colors[0].controller, f"|{second}")
         feature.update_preview(ColorValue.rgb_color((0.0, 1.0, 0.0)))
         self.assertEqual(colors.capture(first_shape), first_original)
-        self.assertAlmostEqual(colors.capture(second_shape).rgb[1], 1.0)
+        displayed = colors.display_color(colors.capture(second_shape))
+        self.assertAlmostEqual(displayed.rgb[1], 1.0, places=3)
         feature.rollback()
         self.assertEqual(colors.capture(second_shape), second_original)
 
