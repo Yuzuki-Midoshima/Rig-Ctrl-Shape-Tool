@@ -48,26 +48,27 @@ class PreviewFeature:
         self._cancel(keep_enabled=keep_enabled)
 
     def undo_uncommitted(self) -> bool:
-        """Undo one input edit while keeping the preview session active."""
+        """Undo one input edit without changing the Preview ON/OFF state."""
         preview = self._state.preview
-        if not self.is_active:
+        if not preview.value_undo_stack:
             return False
-        if preview.value_undo_stack:
-            preview.value_redo_stack.append(replace(self._state.values))
-            self._state.values = preview.value_undo_stack.pop()
+        preview.value_redo_stack.append(replace(self._state.values))
+        self._state.values = preview.value_undo_stack.pop()
         self._mark_display_values_dirty()
-        self._refresh()
+        if self.is_active:
+            self._refresh()
         return True
 
     def redo_uncommitted(self) -> bool:
         """Redo one input edit while keeping the preview session active."""
         preview = self._state.preview
-        if not self.is_active or not preview.value_redo_stack:
+        if not preview.value_redo_stack:
             return False
         preview.value_undo_stack.append(replace(self._state.values))
         self._state.values = preview.value_redo_stack.pop()
         self._mark_display_values_dirty()
-        self._refresh()
+        if self.is_active:
+            self._refresh()
         return True
 
     def _mark_display_values_dirty(self) -> None:
@@ -81,7 +82,7 @@ class PreviewFeature:
             self.cancel_color()
             self._refresh()
         else:
-            self._cancel()
+            self._cancel(preserve_value_history=True)
 
     def _start(self, cvs: list[str]) -> bool:
         if not cvs:
@@ -143,7 +144,13 @@ class PreviewFeature:
             for shape in self._selection.shapes():
                 self._scene.set_line_width(shape, self._state.values.line_width)
 
-    def _cancel(self, keep_enabled: bool = False) -> None:
+    def _cancel(
+        self,
+        keep_enabled: bool = False,
+        preserve_value_history: bool = False,
+    ) -> None:
+        value_undo_stack = list(self._state.preview.value_undo_stack)
+        value_redo_stack = list(self._state.preview.value_redo_stack)
         try:
             if self._state.preview.positions:
                 self._restore()
@@ -158,5 +165,8 @@ class PreviewFeature:
             if preview.lifecycle.is_active:
                 preview.lifecycle.rollback()
             preview.clear()
+            if preserve_value_history:
+                preview.value_undo_stack = value_undo_stack
+                preview.value_redo_stack = value_redo_stack
             if not keep_enabled:
                 preview.enabled = False

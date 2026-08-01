@@ -168,6 +168,62 @@ class TransformLogicTests(unittest.TestCase):
         self.assertEqual(state.values.scale, (2.0, 2.0, 2.0))
         self.assertTrue(preview.is_active)
 
+    def test_preview_disabled_keeps_input_undo_without_scene_refresh(self) -> None:
+        class Selection:
+            def cvs(self):
+                return ["curveShape.cv[0]"]
+
+            def joints(self):
+                return []
+
+            def shapes(self):
+                return []
+
+            def controllers(self):
+                return []
+
+        class Scene:
+            def __init__(self):
+                self.set_position_calls = 0
+
+            def cv_position(self, _cv):
+                return (0.0, 0.0, 0.0)
+
+            def open_undo(self, _name):
+                return None
+
+            def close_undo(self):
+                return None
+
+            def exists(self, _node):
+                return True
+
+            def set_cv_position(self, _cv, _position):
+                self.set_position_calls += 1
+
+            def warning(self, _message, _error=None):
+                return None
+
+        state = ToolState()
+        scene = Scene()
+        preview = PreviewFeature(state, Selection(), scene)
+        controls = ControlsFeature(state)
+        controls.changed = preview.update_preview
+
+        preview.begin()
+        controls.update("scale", (2.0, 2.0, 2.0))
+        preview.set_enabled(False)
+        restore_calls_after_disable = scene.set_position_calls
+
+        self.assertFalse(preview.is_active)
+        self.assertTrue(preview.undo_uncommitted())
+        self.assertEqual(state.values.scale, (1.0, 1.0, 1.0))
+        self.assertEqual(scene.set_position_calls, restore_calls_after_disable)
+        self.assertTrue(preview.redo_uncommitted())
+        self.assertEqual(state.values.scale, (2.0, 2.0, 2.0))
+        self.assertEqual(scene.set_position_calls, restore_calls_after_disable)
+        self.assertFalse(preview.redo_uncommitted())
+
     def test_rotate_90_button_creates_one_preview_undo_step(self) -> None:
         state = ToolState()
         controls = ControlsFeature(state)
