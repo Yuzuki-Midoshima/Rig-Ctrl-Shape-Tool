@@ -12,6 +12,8 @@ class PreviewState:
     positions: dict[str, tuple[float, float, float]] = field(default_factory=dict)
     line_widths: dict[str, float] = field(default_factory=dict)
     input_values: TransformValues | None = None
+    value_undo_stack: list[TransformValues] = field(default_factory=list)
+    value_redo_stack: list[TransformValues] = field(default_factory=list)
     undo_open: bool = False
     enabled: bool = False
     lifecycle: EditSessionLifecycle = field(default_factory=EditSessionLifecycle)
@@ -21,6 +23,8 @@ class PreviewState:
         self.positions.clear()
         self.line_widths.clear()
         self.input_values = None
+        self.value_undo_stack.clear()
+        self.value_redo_stack.clear()
         self.undo_open = False
 
 

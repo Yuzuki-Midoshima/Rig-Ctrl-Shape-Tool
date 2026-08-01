@@ -95,13 +95,23 @@ class TransformLogicTests(unittest.TestCase):
 
         state = ToolState()
         preview = PreviewFeature(state, Selection(), Scene())
+        controls = ControlsFeature(state)
+        controls.changed = preview.update_preview
         preview.begin()
-        state.values.scale = (2.0, 3.0, 4.0)
-        preview.update_preview()
+        controls.update("scale", (2.0, 2.0, 2.0))
+        controls.update("scale", (3.0, 3.0, 3.0))
+        controls.update("scale", (4.0, 4.0, 4.0))
 
         self.assertTrue(preview.undo_uncommitted())
-        self.assertEqual(state.values.scale, (1.0, 1.0, 1.0))
-        self.assertFalse(state.preview.enabled)
+        self.assertEqual(state.values.scale, (3.0, 3.0, 3.0))
+        self.assertTrue(preview.undo_uncommitted())
+        self.assertEqual(state.values.scale, (2.0, 2.0, 2.0))
+        self.assertTrue(state.preview.enabled)
+        self.assertTrue(preview.is_active)
+        self.assertTrue(preview.redo_uncommitted())
+        self.assertEqual(state.values.scale, (3.0, 3.0, 3.0))
+        self.assertTrue(preview.redo_uncommitted())
+        self.assertEqual(state.values.scale, (4.0, 4.0, 4.0))
 
 
 if __name__ == "__main__":

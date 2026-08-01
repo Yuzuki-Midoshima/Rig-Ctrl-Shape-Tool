@@ -20,6 +20,7 @@ class ControlsFeature:
         return self._state.values
 
     def update(self, group: str, values: tuple[float, ...]) -> None:
+        self._record_preview_value()
         value = values[0] if group in ("uniform", "line_width") else values
         setattr(self._state.values, group, value)
         if group == "line_width":
@@ -27,6 +28,7 @@ class ControlsFeature:
         self.changed()
 
     def reset(self, group: str) -> None:
+        self._record_preview_value()
         default = getattr(TransformValues(), group)
         setattr(self._state.values, group, default)
         if group == "line_width":
@@ -35,6 +37,7 @@ class ControlsFeature:
 
     def reset_axis(self, group: str, axis: int) -> None:
         """Reset one axis while preserving the other two values."""
+        self._record_preview_value()
         current = getattr(self._state.values, group)
         default = getattr(TransformValues(), group)
         if not isinstance(current, tuple) or not isinstance(default, tuple):
@@ -45,8 +48,16 @@ class ControlsFeature:
         self.changed()
 
     def reset_all(self) -> None:
+        self._record_preview_value()
         self._state.reset_values()
         self.changed()
+
+    def _record_preview_value(self) -> None:
+        preview = self._state.preview
+        if not preview.enabled or not preview.lifecycle.is_active:
+            return
+        preview.value_undo_stack.append(replace(self._state.values))
+        preview.value_redo_stack.clear()
 
     def record_apply(self) -> None:
         """Pair Maya's next transform Undo with the current control values."""

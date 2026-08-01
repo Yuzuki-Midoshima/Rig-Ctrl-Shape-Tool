@@ -48,17 +48,32 @@ class PreviewFeature:
         self._cancel(keep_enabled=keep_enabled)
 
     def undo_uncommitted(self) -> bool:
-        """Cancel an active pre-Apply preview and restore its initial inputs."""
+        """Undo one input edit while keeping the preview session active."""
         preview = self._state.preview
-        if not self.is_active or preview.input_values is None:
+        if not self.is_active:
             return False
-        input_values = replace(preview.input_values)
-        self._cancel()
-        self._state.values = input_values
-        self._state.line_width_dirty = False
-        if hasattr(self._state, "joint_size_dirty"):
-            self._state.joint_size_dirty = False
+        if preview.value_undo_stack:
+            preview.value_redo_stack.append(replace(self._state.values))
+            self._state.values = preview.value_undo_stack.pop()
+        self._mark_display_values_dirty()
+        self._refresh()
         return True
+
+    def redo_uncommitted(self) -> bool:
+        """Redo one input edit while keeping the preview session active."""
+        preview = self._state.preview
+        if not self.is_active or not preview.value_redo_stack:
+            return False
+        preview.value_undo_stack.append(replace(self._state.values))
+        self._state.values = preview.value_redo_stack.pop()
+        self._mark_display_values_dirty()
+        self._refresh()
+        return True
+
+    def _mark_display_values_dirty(self) -> None:
+        self._state.line_width_dirty = True
+        if hasattr(self._state, "joint_size_dirty"):
+            self._state.joint_size_dirty = True
 
     def set_enabled(self, enabled: bool) -> None:
         self._state.preview.enabled = enabled

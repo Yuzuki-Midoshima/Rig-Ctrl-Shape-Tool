@@ -100,6 +100,8 @@ def show() -> RigCtrlShapeWindow:
             window.refresh_colors()
 
     def handle_redo() -> None:
+        if window.restore_uncommitted_preview_redo():
+            return
         if scene.undo_name() in transform_undo_names:
             window.restore_redo_values()
         else:
