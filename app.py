@@ -62,6 +62,7 @@ def show() -> RigCtrlShapeWindow:
     transform.cancel_color = color.rollback
     transform.has_active_preview = lambda: preview.is_active
     transform.commit_preview = preview.commit
+    transform.applied = controls.record_apply
     preview.cancel_color = color.rollback
     controls.changed = preview.update_preview
     def cancel_sessions() -> None:
@@ -82,9 +83,29 @@ def show() -> RigCtrlShapeWindow:
         parent=parent,
     )
     color.colors_changed = window.handle_color_state_changed
+    transform_undo_names = {
+        "RigCtrlShapeApply",
+        "RigCtrlShapeApplyValue",
+        "RigCtrlShapePreview",
+    }
+
+    def handle_undo() -> None:
+        if scene.redo_name() in transform_undo_names:
+            window.restore_undo_values()
+        else:
+            window.refresh_colors()
+
+    def handle_redo() -> None:
+        if scene.undo_name() in transform_undo_names:
+            window.restore_redo_values()
+        else:
+            window.refresh_colors()
+
     state.window.event_jobs = window_service.watch_scene(
         window.refresh_colors,
         window.handle_selection_changed,
+        handle_undo,
+        handle_redo,
     )
 
     def close() -> None:

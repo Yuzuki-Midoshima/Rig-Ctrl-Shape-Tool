@@ -5,7 +5,9 @@ import unittest
 from rig_ctrl_shape_tool.core.domain import ColorValue, SessionStatus, TransformValues
 from rig_ctrl_shape_tool.core.errors import EditSessionError
 from rig_ctrl_shape_tool.core.sessions import EditSessionLifecycle
+from rig_ctrl_shape_tool.core.state import ToolState
 from rig_ctrl_shape_tool.core.transform_math import isolated_transform_values
+from rig_ctrl_shape_tool.features.controls import ControlsFeature
 
 
 class ColorLogicTests(unittest.TestCase):
@@ -45,6 +47,17 @@ class TransformLogicTests(unittest.TestCase):
         self.assertEqual(isolated.scale, (1.0, 3, 1.0))
         self.assertEqual(isolated.rotate, (0.0, 0.0, 0.0))
         self.assertEqual(isolated.move, (0.0, 0.0, 0.0))
+
+    def test_applied_values_follow_undo_and_redo(self) -> None:
+        state = ToolState()
+        controls = ControlsFeature(state)
+        controls.update("scale", (2.0, 3.0, 4.0))
+        controls.record_apply()
+
+        self.assertTrue(controls.restore_undo_values())
+        self.assertEqual(state.values.scale, (1.0, 1.0, 1.0))
+        self.assertTrue(controls.restore_redo_values())
+        self.assertEqual(state.values.scale, (2.0, 3.0, 4.0))
 
 
 if __name__ == "__main__":

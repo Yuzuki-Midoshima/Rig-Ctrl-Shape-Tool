@@ -22,6 +22,7 @@ class TransformFeature:
         self.cancel_color: Callable[[], None] = lambda: None
         self.has_active_preview: Callable[[], bool] = lambda: False
         self.commit_preview: Callable[[], None] = lambda: None
+        self.applied: Callable[[], None] = lambda: None
 
     def _transform_cvs(self, cvs: Sequence[str], values: TransformValues | None = None) -> None:
         """Transform one controller's CVs around its shape center.
@@ -56,6 +57,7 @@ class TransformFeature:
                     self._scene.set_line_width(shape, isolated.line_width)
             else:
                 self._transform_selection(isolated)
+        self.applied()
 
     def _apply_line_width(self, shapes: Sequence[str]) -> None:
         if not self._state.line_width_dirty:
@@ -71,6 +73,7 @@ class TransformFeature:
         if self.has_active_preview():
             self.commit_preview()
             self._state.line_width_dirty = False
+            self.applied()
             return
         cvs = self._selection.cvs()
         if not cvs:
@@ -79,6 +82,7 @@ class TransformFeature:
             self._transform_selection()
             self._apply_line_width(self._selection.shapes())
         self._state.line_width_dirty = False
+        self.applied()
 
     def _rotate_90(self, axis: int) -> None:
         values = list(self._state.values.rotate)

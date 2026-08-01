@@ -65,5 +65,11 @@ class MayaSceneService:
         if cmds.undoInfo(query=True, undoName=True) == name:
             cmds.undo()
 
+    def undo_name(self) -> str:
+        return str(cmds.undoInfo(query=True, undoName=True) or "")
+
+    def redo_name(self) -> str:
+        return str(cmds.undoInfo(query=True, redoName=True) or "")
+
     def warning(self, message: str, error: Exception | None = None) -> None:
         warn(message, error)

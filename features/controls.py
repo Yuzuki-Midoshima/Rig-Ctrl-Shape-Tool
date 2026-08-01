@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 
 from ..core.domain import TransformValues
 from ..core.state import ToolState
@@ -46,3 +47,38 @@ class ControlsFeature:
     def reset_all(self) -> None:
         self._state.reset_values()
         self.changed()
+
+    def record_apply(self) -> None:
+        """Pair Maya's next transform Undo with the current control values."""
+        before = replace(self._state.committed_values)
+        after = replace(self._state.values)
+        self._state.value_undo_stack.append((before, after))
+        self._state.value_redo_stack.clear()
+        self._state.committed_values = replace(after)
+
+    def restore_undo_values(self) -> bool:
+        """Restore the inputs associated with a completed Maya Undo."""
+        if not self._state.value_undo_stack:
+            return False
+        before, after = self._state.value_undo_stack.pop()
+        self._state.value_redo_stack.append((before, after))
+        self._state.values = replace(before)
+        self._state.committed_values = replace(before)
+        self._clear_dirty_flags()
+        return True
+
+    def restore_redo_values(self) -> bool:
+        """Restore the inputs associated with a completed Maya Redo."""
+        if not self._state.value_redo_stack:
+            return False
+        before, after = self._state.value_redo_stack.pop()
+        self._state.value_undo_stack.append((before, after))
+        self._state.values = replace(after)
+        self._state.committed_values = replace(after)
+        self._clear_dirty_flags()
+        return True
+
+    def _clear_dirty_flags(self) -> None:
+        self._state.line_width_dirty = False
+        if hasattr(self._state, "joint_size_dirty"):
+            self._state.joint_size_dirty = False

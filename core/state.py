@@ -49,6 +49,13 @@ class ToolState:
     copy_buffer: CopyBuffer = field(default_factory=CopyBuffer)
     window: WindowState = field(default_factory=WindowState)
     line_width_dirty: bool = False
+    committed_values: TransformValues = field(default_factory=TransformValues)
+    value_undo_stack: list[tuple[TransformValues, TransformValues]] = field(
+        default_factory=list
+    )
+    value_redo_stack: list[tuple[TransformValues, TransformValues]] = field(
+        default_factory=list
+    )
 
     def reset_values(self) -> None:
         self.values = TransformValues()

@@ -237,6 +237,16 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             value = getattr(values, key)
             control.set_values((value,) if isinstance(value, float) else value)
 
+    def restore_undo_values(self) -> None:
+        if self.controls_feature.restore_undo_values():
+            self.sync_values()
+        self.refresh_colors()
+
+    def restore_redo_values(self) -> None:
+        if self.controls_feature.restore_redo_values():
+            self.sync_values()
+        self.refresh_colors()
+
     def refresh_colors(self) -> None:
         try:
             view_data = self.color_feature.get_current_view_data()

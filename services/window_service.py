@@ -12,11 +12,13 @@ class WindowService:
         self,
         refresh_callback: Callable[[], None],
         selection_callback: Callable[[], None],
+        undo_callback: Callable[[], None] | None = None,
+        redo_callback: Callable[[], None] | None = None,
     ) -> list[int]:
         callbacks = {
             "SelectionChanged": selection_callback,
-            "Undo": refresh_callback,
-            "Redo": refresh_callback,
+            "Undo": undo_callback or refresh_callback,
+            "Redo": redo_callback or refresh_callback,
         }
         jobs = [
             cmds.scriptJob(event=[event, callback], protected=True)
