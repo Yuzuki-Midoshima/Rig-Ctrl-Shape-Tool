@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6 import QtCore, QtWidgets
 
 from .core.state import ToolState
@@ -101,11 +103,15 @@ def show() -> RigCtrlShapeWindow:
         else:
             window.refresh_colors()
 
+    def defer_undo_sync(callback: Callable[[], None]) -> None:
+        """Read Maya's queue after the Undo/Redo command has fully finished."""
+        QtCore.QTimer.singleShot(0, callback)
+
     state.window.event_jobs = window_service.watch_scene(
         window.refresh_colors,
         window.handle_selection_changed,
-        handle_undo,
-        handle_redo,
+        lambda: defer_undo_sync(handle_undo),
+        lambda: defer_undo_sync(handle_redo),
     )
 
     def close() -> None:
