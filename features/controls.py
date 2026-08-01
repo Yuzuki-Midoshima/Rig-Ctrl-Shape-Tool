@@ -71,6 +71,10 @@ class ControlsFeature:
         self._preview_edit_active = False
         self._preview_value_recorded = False
 
+    def capture_preview_value(self) -> None:
+        """Capture one non-field action such as a +90 rotation button."""
+        self._record_preview_value()
+
     def record_apply(self) -> None:
         """Pair Maya's next transform Undo with the current control values."""
         before = replace(self._state.committed_values)

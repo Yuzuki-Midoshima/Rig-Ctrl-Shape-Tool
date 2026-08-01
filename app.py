@@ -65,6 +65,7 @@ def show() -> RigCtrlShapeWindow:
     transform.has_active_preview = lambda: preview.is_active
     transform.commit_preview = preview.commit
     transform.applied = controls.record_apply
+    transform.before_value_change = controls.capture_preview_value
     preview.cancel_color = color.rollback
     controls.changed = preview.update_preview
     def cancel_sessions() -> None:

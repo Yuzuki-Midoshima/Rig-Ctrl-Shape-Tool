@@ -9,6 +9,7 @@ from rig_ctrl_shape_tool.core.state import ToolState
 from rig_ctrl_shape_tool.core.transform_math import isolated_transform_values
 from rig_ctrl_shape_tool.features.controls import ControlsFeature
 from rig_ctrl_shape_tool.features.preview import PreviewFeature
+from rig_ctrl_shape_tool.features.transform import TransformFeature
 
 
 class ColorLogicTests(unittest.TestCase):
@@ -166,6 +167,17 @@ class TransformLogicTests(unittest.TestCase):
 
         self.assertEqual(state.values.scale, (2.0, 2.0, 2.0))
         self.assertTrue(preview.is_active)
+
+    def test_rotate_90_button_creates_one_preview_undo_step(self) -> None:
+        state = ToolState()
+        controls = ControlsFeature(state)
+        transform = TransformFeature(state, object(), object())
+        transform.before_value_change = controls.capture_preview_value
+
+        transform.rotate_y_90()
+
+        self.assertEqual(state.values.rotate, (0.0, 90.0, 0.0))
+        self.assertEqual(len(state.preview.value_undo_stack), 1)
 
 
 if __name__ == "__main__":
