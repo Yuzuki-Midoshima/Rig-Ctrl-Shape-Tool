@@ -121,7 +121,11 @@ class PreviewFeature:
             return
         cvs = self._selection.cvs()
         if set(cvs) != set(self._state.preview.positions):
+            value_undo_stack = list(self._state.preview.value_undo_stack)
+            value_redo_stack = list(self._state.preview.value_redo_stack)
             self._cancel(keep_enabled=True)
+            self._state.preview.value_undo_stack = value_undo_stack
+            self._state.preview.value_redo_stack = value_redo_stack
             if not self._start(cvs):
                 return
         try:

@@ -124,7 +124,7 @@ class UiInteractionTests(unittest.TestCase):
         disconnect = SimpleNamespace(disconnect_selected=noop)
         controls = SimpleNamespace(
             update=noop, reset=noop, reset_all=noop, reset_axis=noop,
-            current_values=noop,
+            current_values=noop, begin_preview_edit=noop, end_preview_edit=noop,
         )
         window = RigCtrlShapeWindow(
             transform, preview, color, copy_paste, disconnect, controls

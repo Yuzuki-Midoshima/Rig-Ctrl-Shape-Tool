@@ -98,20 +98,74 @@ class TransformLogicTests(unittest.TestCase):
         controls = ControlsFeature(state)
         controls.changed = preview.update_preview
         preview.begin()
-        controls.update("scale", (2.0, 2.0, 2.0))
-        controls.update("scale", (3.0, 3.0, 3.0))
-        controls.update("scale", (4.0, 4.0, 4.0))
+        for intermediate, final in ((1.5, 2.0), (2.5, 3.0), (3.5, 4.0)):
+            controls.begin_preview_edit()
+            controls.update("scale", (intermediate,) * 3)
+            controls.update("scale", (final,) * 3)
+            controls.end_preview_edit()
+
+        self.assertEqual(len(state.preview.value_undo_stack), 3)
 
         self.assertTrue(preview.undo_uncommitted())
         self.assertEqual(state.values.scale, (3.0, 3.0, 3.0))
         self.assertTrue(preview.undo_uncommitted())
         self.assertEqual(state.values.scale, (2.0, 2.0, 2.0))
+        self.assertTrue(preview.undo_uncommitted())
+        self.assertEqual(state.values.scale, (1.0, 1.0, 1.0))
         self.assertTrue(state.preview.enabled)
         self.assertTrue(preview.is_active)
+        self.assertTrue(preview.redo_uncommitted())
+        self.assertEqual(state.values.scale, (2.0, 2.0, 2.0))
         self.assertTrue(preview.redo_uncommitted())
         self.assertEqual(state.values.scale, (3.0, 3.0, 3.0))
         self.assertTrue(preview.redo_uncommitted())
         self.assertEqual(state.values.scale, (4.0, 4.0, 4.0))
+
+    def test_preview_enabled_after_edits_keeps_their_undo_history(self) -> None:
+        class Selection:
+            def cvs(self):
+                return ["curveShape.cv[0]"]
+
+            def joints(self):
+                return []
+
+            def shapes(self):
+                return []
+
+            def controllers(self):
+                return []
+
+        class Scene:
+            def cv_position(self, _cv):
+                return (0.0, 0.0, 0.0)
+
+            def open_undo(self, _name):
+                return None
+
+            def close_undo(self):
+                return None
+
+            def exists(self, _node):
+                return True
+
+            def set_cv_position(self, _cv, _position):
+                return None
+
+            def warning(self, _message, _error=None):
+                return None
+
+        state = ToolState()
+        controls = ControlsFeature(state)
+        controls.update("scale", (2.0, 2.0, 2.0))
+        controls.update("scale", (3.0, 3.0, 3.0))
+        preview = PreviewFeature(state, Selection(), Scene())
+        controls.changed = preview.update_preview
+
+        preview.begin()
+        self.assertTrue(preview.undo_uncommitted())
+
+        self.assertEqual(state.values.scale, (2.0, 2.0, 2.0))
+        self.assertTrue(preview.is_active)
 
 
 if __name__ == "__main__":

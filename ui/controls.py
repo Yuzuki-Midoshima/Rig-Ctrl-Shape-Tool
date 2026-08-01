@@ -66,6 +66,8 @@ class DigitAwareDoubleSpinBox(QtWidgets.QDoubleSpinBox):
 
 class NumericControl(QtWidgets.QWidget):
     valuesChanged = QtCore.Signal(tuple)
+    interactionStarted = QtCore.Signal()
+    interactionFinished = QtCore.Signal()
     applyRequested = QtCore.Signal(int)
     resetRequested = QtCore.Signal(int)
     _SLIDER_FACTOR = 10000
@@ -91,6 +93,8 @@ class NumericControl(QtWidgets.QWidget):
             slider.setValue(round(value * self._SLIDER_FACTOR))
             field.valueChanged.connect(self._from_fields)
             slider.valueChanged.connect(self._from_sliders)
+            slider.sliderPressed.connect(self.interactionStarted)
+            slider.sliderReleased.connect(self.interactionFinished)
             self.fields.append(field)
             self.sliders.append(slider)
             axis = len(self.fields) - 1

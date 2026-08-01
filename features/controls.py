@@ -15,6 +15,8 @@ class ControlsFeature:
     def __init__(self, state: ToolState) -> None:
         self._state = state
         self.changed: Callable[[], None] = lambda: None
+        self._preview_edit_active = False
+        self._preview_value_recorded = False
 
     def current_values(self) -> TransformValues:
         return self._state.values
@@ -54,10 +56,20 @@ class ControlsFeature:
 
     def _record_preview_value(self) -> None:
         preview = self._state.preview
-        if not preview.enabled or not preview.lifecycle.is_active:
+        if self._preview_edit_active and self._preview_value_recorded:
             return
         preview.value_undo_stack.append(replace(self._state.values))
         preview.value_redo_stack.clear()
+        self._preview_value_recorded = True
+
+    def begin_preview_edit(self) -> None:
+        """Group continuous slider updates into one Preview undo step."""
+        self._preview_edit_active = True
+        self._preview_value_recorded = False
+
+    def end_preview_edit(self) -> None:
+        self._preview_edit_active = False
+        self._preview_value_recorded = False
 
     def record_apply(self) -> None:
         """Pair Maya's next transform Undo with the current control values."""
@@ -66,6 +78,9 @@ class ControlsFeature:
         self._state.value_undo_stack.append((before, after))
         self._state.value_redo_stack.clear()
         self._state.committed_values = replace(after)
+
+        self._state.preview.value_undo_stack.clear()
+        self._state.preview.value_redo_stack.clear()
 
     def restore_undo_values(self) -> bool:
         """Restore the inputs associated with a completed Maya Undo."""

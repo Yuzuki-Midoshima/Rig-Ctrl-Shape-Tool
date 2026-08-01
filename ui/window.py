@@ -63,6 +63,8 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             self._controls[key] = control
             header.resetClicked.connect(lambda key=key: self._reset(key))
             control.valuesChanged.connect(lambda values, key=key: self.controls_feature.update(key, values))
+            control.interactionStarted.connect(self.controls_feature.begin_preview_edit)
+            control.interactionFinished.connect(self.controls_feature.end_preview_edit)
             control.applyRequested.connect(
                 lambda axis, key=key: self._apply_context_value(key, axis)
             )
