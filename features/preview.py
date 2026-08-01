@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 
 from ..core.state import ToolState
 from ..services import MayaSceneService, SelectionService
@@ -46,6 +47,19 @@ class PreviewFeature:
         """Restore the preview baseline, optionally preserving checkbox state."""
         self._cancel(keep_enabled=keep_enabled)
 
+    def undo_uncommitted(self) -> bool:
+        """Cancel an active pre-Apply preview and restore its initial inputs."""
+        preview = self._state.preview
+        if not self.is_active or preview.input_values is None:
+            return False
+        input_values = replace(preview.input_values)
+        self._cancel()
+        self._state.values = input_values
+        self._state.line_width_dirty = False
+        if hasattr(self._state, "joint_size_dirty"):
+            self._state.joint_size_dirty = False
+        return True
+
     def set_enabled(self, enabled: bool) -> None:
         self._state.preview.enabled = enabled
         if enabled:
@@ -58,6 +72,7 @@ class PreviewFeature:
         if not cvs:
             return False
         try:
+            self._state.preview.input_values = replace(self._state.values)
             self._state.preview.positions = {
                 cv: self._scene.cv_position(cv) for cv in cvs
             }

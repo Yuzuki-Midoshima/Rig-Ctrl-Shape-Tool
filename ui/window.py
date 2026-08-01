@@ -242,6 +242,16 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             self.sync_values()
         self.refresh_colors()
 
+    def restore_uncommitted_preview(self) -> bool:
+        if not self.preview_feature.undo_uncommitted():
+            return False
+        blocker = QtCore.QSignalBlocker(self.preview_box)
+        self.preview_box.setChecked(False)
+        del blocker
+        self.sync_values()
+        self.refresh_colors()
+        return True
+
     def restore_redo_values(self) -> None:
         if self.controls_feature.restore_redo_values():
             self.sync_values()

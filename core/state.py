@@ -11,6 +11,7 @@ from .sessions import EditSessionLifecycle
 class PreviewState:
     positions: dict[str, tuple[float, float, float]] = field(default_factory=dict)
     line_widths: dict[str, float] = field(default_factory=dict)
+    input_values: TransformValues | None = None
     undo_open: bool = False
     enabled: bool = False
     lifecycle: EditSessionLifecycle = field(default_factory=EditSessionLifecycle)
@@ -19,6 +20,7 @@ class PreviewState:
         """Discard captured scene data while retaining the lifecycle outcome."""
         self.positions.clear()
         self.line_widths.clear()
+        self.input_values = None
         self.undo_open = False
 
 

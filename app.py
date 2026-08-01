@@ -92,6 +92,8 @@ def show() -> RigCtrlShapeWindow:
     }
 
     def handle_undo() -> None:
+        if window.restore_uncommitted_preview():
+            return
         if scene.redo_name() in transform_undo_names:
             window.restore_undo_values()
         else:
