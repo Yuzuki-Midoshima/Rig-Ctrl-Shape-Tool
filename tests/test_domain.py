@@ -231,9 +231,11 @@ class TransformLogicTests(unittest.TestCase):
         transform.before_value_change = controls.capture_preview_value
 
         transform.rotate_y_90()
+        transform.rotate_y_90()
+        transform.rotate_y_90()
 
-        self.assertEqual(state.values.rotate, (0.0, 90.0, 0.0))
-        self.assertEqual(len(state.preview.value_undo_stack), 1)
+        self.assertEqual(state.values.rotate, (0.0, 270.0, 0.0))
+        self.assertEqual(len(state.preview.value_undo_stack), 3)
 
 
 if __name__ == "__main__":

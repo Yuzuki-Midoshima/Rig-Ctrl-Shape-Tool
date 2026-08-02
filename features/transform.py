@@ -88,7 +88,7 @@ class TransformFeature:
     def _rotate_90(self, axis: int) -> None:
         self.before_value_change()
         values = list(self._state.values.rotate)
-        values[axis] = 90.0
+        values[axis] += 90.0
         self._state.values.rotate = tuple(values)
 
     def rotate_x_90(self) -> None:
