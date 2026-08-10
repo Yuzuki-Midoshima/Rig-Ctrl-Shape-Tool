@@ -99,11 +99,18 @@ class ColorPreviewDialog(QtWidgets.QDialog):
         return index if index < count else None
 
     def _show_custom_menu(self, index: int, global_position: QtCore.QPoint) -> None:
-        menu = QtWidgets.QMenu(self)
-        edit, remove = menu.addAction("Edit"), menu.addAction("Remove")
+        menu, edit, remove = self._create_custom_menu()
         edit.triggered.connect(lambda: self._edit_custom_color(index))
         remove.triggered.connect(lambda: self._remove_custom_color(index))
         menu.popup(global_position)
+
+    def _create_custom_menu(
+        self,
+    ) -> tuple[QtWidgets.QMenu, QtGui.QAction, QtGui.QAction]:
+        menu = QtWidgets.QMenu(self)
+        edit = menu.addAction("編集")
+        remove = menu.addAction("削除")
+        return menu, edit, remove
 
     def _edit_custom_color(self, index: int) -> None:
         color = QtWidgets.QColorDialog.customColor(index)

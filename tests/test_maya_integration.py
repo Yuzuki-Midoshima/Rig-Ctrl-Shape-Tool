@@ -401,6 +401,37 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         for node, original in before.items():
             self.assertEqual(cmds.exactWorldBoundingBox(node), original)
 
+    def test_joint_size_edits_selected_joints_individually_with_preview(self) -> None:
+        first = cmds.createNode("joint", name="joint_size_first")
+        second = cmds.createNode("joint", name="joint_size_second")
+        untouched = cmds.createNode("joint", name="joint_size_untouched")
+        cmds.setAttr(f"{first}.radius", 1.5)
+        cmds.setAttr(f"{second}.radius", 2.0)
+        cmds.setAttr(f"{untouched}.radius", 3.0)
+        cmds.select([first, second], replace=True)
+        transform = TransformFeature(self.state, self.selection, self.scene)
+        preview = PreviewFeature(self.state, self.selection, self.scene)
+        self.state.values.joint_size = 4.0
+        self.state.joint_size_dirty = True
+
+        preview.begin()
+        self.assertEqual(cmds.getAttr(f"{first}.radius"), 6.0)
+        self.assertEqual(cmds.getAttr(f"{second}.radius"), 8.0)
+        self.assertEqual(cmds.getAttr(f"{untouched}.radius"), 3.0)
+        self.state.values.joint_size = 1.0
+        preview.update_preview()
+        self.assertEqual(cmds.getAttr(f"{first}.radius"), 1.5)
+        self.assertEqual(cmds.getAttr(f"{second}.radius"), 2.0)
+        self.state.values.joint_size = 4.0
+        preview.update_preview()
+        preview.rollback()
+        self.assertEqual(cmds.getAttr(f"{first}.radius"), 1.5)
+        self.assertEqual(cmds.getAttr(f"{second}.radius"), 2.0)
+
+        transform.apply_value("joint_size")
+        self.assertEqual(cmds.getAttr(f"{first}.radius"), 6.0)
+        self.assertEqual(cmds.getAttr(f"{second}.radius"), 8.0)
+
 
 if __name__ == "__main__":
     unittest.main()

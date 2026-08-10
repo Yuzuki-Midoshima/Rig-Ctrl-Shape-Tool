@@ -10,7 +10,7 @@ def isolated_transform_values(
 ) -> TransformValues:
     """Return neutral values except for one context-menu field."""
     isolated = TransformValues()
-    if group in ("uniform", "line_width"):
+    if group in ("uniform", "line_width", "joint_size"):
         setattr(isolated, group, getattr(current, group))
         return isolated
     if group not in ("scale", "rotate", "move"):

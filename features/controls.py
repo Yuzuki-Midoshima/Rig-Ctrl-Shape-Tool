@@ -23,10 +23,12 @@ class ControlsFeature:
 
     def update(self, group: str, values: tuple[float, ...]) -> None:
         self._record_preview_value()
-        value = values[0] if group in ("uniform", "line_width") else values
+        value = values[0] if group in ("uniform", "line_width", "joint_size") else values
         setattr(self._state.values, group, value)
         if group == "line_width":
             self._state.line_width_dirty = True
+        elif group == "joint_size":
+            self._state.joint_size_dirty = True
         self.changed()
 
     def reset(self, group: str) -> None:
@@ -35,6 +37,8 @@ class ControlsFeature:
         setattr(self._state.values, group, default)
         if group == "line_width":
             self._state.line_width_dirty = True
+        elif group == "joint_size":
+            self._state.joint_size_dirty = True
         self.changed()
 
     def reset_axis(self, group: str, axis: int) -> None:
@@ -67,13 +71,13 @@ class ControlsFeature:
         self._preview_edit_active = True
         self._preview_value_recorded = False
 
-    def end_preview_edit(self) -> None:
-        self._preview_edit_active = False
-        self._preview_value_recorded = False
-
     def capture_preview_value(self) -> None:
         """Capture one non-field action such as a +90 rotation button."""
         self._record_preview_value()
+
+    def end_preview_edit(self) -> None:
+        self._preview_edit_active = False
+        self._preview_value_recorded = False
 
     def record_apply(self) -> None:
         """Pair Maya's next transform Undo with the current control values."""
@@ -82,7 +86,6 @@ class ControlsFeature:
         self._state.value_undo_stack.append((before, after))
         self._state.value_redo_stack.clear()
         self._state.committed_values = replace(after)
-
         self._state.preview.value_undo_stack.clear()
         self._state.preview.value_redo_stack.clear()
 

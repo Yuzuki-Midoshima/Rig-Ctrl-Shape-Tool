@@ -11,6 +11,7 @@ from .sessions import EditSessionLifecycle
 class PreviewState:
     positions: dict[str, tuple[float, float, float]] = field(default_factory=dict)
     line_widths: dict[str, float] = field(default_factory=dict)
+    joint_sizes: dict[str, float] = field(default_factory=dict)
     input_values: TransformValues | None = None
     value_undo_stack: list[TransformValues] = field(default_factory=list)
     value_redo_stack: list[TransformValues] = field(default_factory=list)
@@ -22,6 +23,7 @@ class PreviewState:
         """Discard captured scene data while retaining the lifecycle outcome."""
         self.positions.clear()
         self.line_widths.clear()
+        self.joint_sizes.clear()
         self.input_values = None
         self.value_undo_stack.clear()
         self.value_redo_stack.clear()
@@ -55,6 +57,7 @@ class ToolState:
     copy_buffer: CopyBuffer = field(default_factory=CopyBuffer)
     window: WindowState = field(default_factory=WindowState)
     line_width_dirty: bool = False
+    joint_size_dirty: bool = False
     committed_values: TransformValues = field(default_factory=TransformValues)
     value_undo_stack: list[tuple[TransformValues, TransformValues]] = field(
         default_factory=list
@@ -66,3 +69,4 @@ class ToolState:
     def reset_values(self) -> None:
         self.values = TransformValues()
         self.line_width_dirty = True
+        self.joint_size_dirty = True

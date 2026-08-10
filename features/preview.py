@@ -84,8 +84,8 @@ class PreviewFeature:
         else:
             self._cancel(preserve_value_history=True)
 
-    def _start(self, cvs: list[str]) -> bool:
-        if not cvs:
+    def _start(self, cvs: list[str], joints: list[str]) -> bool:
+        if not cvs and not joints:
             return False
         try:
             self._state.preview.input_values = replace(self._state.values)
@@ -95,6 +95,10 @@ class PreviewFeature:
             self._state.preview.line_widths = {
                 shape: width for shape in self._selection.shapes()
                 if (width := self._scene.line_width(shape)) is not None
+            }
+            self._state.preview.joint_sizes = {
+                joint: size for joint in joints
+                if (size := self._scene.joint_size(joint)) is not None
             }
             self._state.preview.lifecycle.begin()
             self._scene.open_undo("RigCtrlShapePreview")
@@ -116,18 +120,24 @@ class PreviewFeature:
                 self._scene.set_cv_position(cv, position)
         for shape, width in self._state.preview.line_widths.items():
             self._scene.set_line_width(shape, width)
+        for joint, size in self._state.preview.joint_sizes.items():
+            self._scene.set_joint_size(joint, size)
 
     def _refresh(self) -> None:
         if not self._state.preview.enabled:
             return
         cvs = self._selection.cvs()
-        if set(cvs) != set(self._state.preview.positions):
+        joints = self._selection.joints()
+        if (
+            set(cvs) != set(self._state.preview.positions)
+            or set(joints) != set(self._state.preview.joint_sizes)
+        ):
             value_undo_stack = list(self._state.preview.value_undo_stack)
             value_redo_stack = list(self._state.preview.value_redo_stack)
             self._cancel(keep_enabled=True)
             self._state.preview.value_undo_stack = value_undo_stack
             self._state.preview.value_redo_stack = value_redo_stack
-            if not self._start(cvs):
+            if not self._start(cvs, joints):
                 return
         try:
             self._restore()
@@ -139,10 +149,16 @@ class PreviewFeature:
     def _apply_current_values(self) -> None:
         for controller in self._selection.controllers():
             cvs = self._selection.controller_cvs(controller)
-            self._scene.transform_cvs(cvs, self._state.values)
+            if cvs:
+                self._scene.transform_cvs(cvs, self._state.values)
         if self._state.line_width_dirty:
             for shape in self._selection.shapes():
                 self._scene.set_line_width(shape, self._state.values.line_width)
+        if self._state.joint_size_dirty:
+            for joint, original_size in self._state.preview.joint_sizes.items():
+                self._scene.set_joint_size(
+                    joint, original_size * self._state.values.joint_size
+                )
 
     def _cancel(
         self,
@@ -152,7 +168,11 @@ class PreviewFeature:
         value_undo_stack = list(self._state.preview.value_undo_stack)
         value_redo_stack = list(self._state.preview.value_redo_stack)
         try:
-            if self._state.preview.positions:
+            if (
+                self._state.preview.positions
+                or self._state.preview.line_widths
+                or self._state.preview.joint_sizes
+            ):
                 self._restore()
         except RuntimeError as error:
             self._scene.warning(

@@ -73,9 +73,12 @@ class NumericControl(QtWidgets.QWidget):
     _SLIDER_FACTOR = 10000
 
     def __init__(self, values: tuple[float, ...], limits: tuple[float, float],
-                 *, context_label: str, parent=None) -> None:
+                 *, context_label: str, slider_center: float | None = None,
+                 parent=None) -> None:
         super().__init__(parent)
         self._syncing = False
+        self._limits = limits
+        self._slider_center = slider_center
         self.fields: list[QtWidgets.QDoubleSpinBox] = []
         self.sliders: list[QtWidgets.QSlider] = []
         layout = QtWidgets.QVBoxLayout(self)
@@ -89,8 +92,14 @@ class NumericControl(QtWidgets.QWidget):
             field.setSingleStep(.1)
             field.setValue(value)
             slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
-            slider.setRange(round(limits[0] * self._SLIDER_FACTOR), round(limits[1] * self._SLIDER_FACTOR))
-            slider.setValue(round(value * self._SLIDER_FACTOR))
+            if slider_center is None:
+                slider.setRange(
+                    round(limits[0] * self._SLIDER_FACTOR),
+                    round(limits[1] * self._SLIDER_FACTOR),
+                )
+            else:
+                slider.setRange(-self._SLIDER_FACTOR, self._SLIDER_FACTOR)
+            slider.setValue(self._value_to_slider(value))
             field.valueChanged.connect(self._from_fields)
             slider.valueChanged.connect(self._from_sliders)
             slider.sliderPressed.connect(self.interactionStarted)
@@ -150,9 +159,13 @@ class NumericControl(QtWidgets.QWidget):
         try:
             for field, slider, value in zip(self.fields, self.sliders, values):
                 field.setValue(value)
-                slider.setRange(min(slider.minimum(), round(value * self._SLIDER_FACTOR)),
-                                max(slider.maximum(), round(value * self._SLIDER_FACTOR)))
-                slider.setValue(round(value * self._SLIDER_FACTOR))
+                slider_value = self._value_to_slider(value)
+                if self._slider_center is None:
+                    slider.setRange(
+                        min(slider.minimum(), slider_value),
+                        max(slider.maximum(), slider_value),
+                    )
+                slider.setValue(slider_value)
         finally:
             self._syncing = False
 
@@ -168,7 +181,28 @@ class NumericControl(QtWidgets.QWidget):
         self._syncing = True
         try:
             for field, slider in zip(self.fields, self.sliders):
-                field.setValue(slider.value() / self._SLIDER_FACTOR)
+                field.setValue(self._slider_to_value(slider.value()))
         finally:
             self._syncing = False
         self.valuesChanged.emit(self.values())
+
+    def _value_to_slider(self, value: float) -> int:
+        center = self._slider_center
+        if center is None:
+            return round(value * self._SLIDER_FACTOR)
+        minimum, maximum = self._limits
+        span = center - minimum if value <= center else maximum - center
+        if span <= 0:
+            return 0
+        direction = -1.0 if value <= center else 1.0
+        distance = abs(value - center) / span
+        return round(direction * min(distance, 1.0) * self._SLIDER_FACTOR)
+
+    def _slider_to_value(self, slider_value: int) -> float:
+        center = self._slider_center
+        if center is None:
+            return slider_value / self._SLIDER_FACTOR
+        minimum, maximum = self._limits
+        ratio = slider_value / self._SLIDER_FACTOR
+        span = center - minimum if ratio < 0 else maximum - center
+        return center + ratio * span

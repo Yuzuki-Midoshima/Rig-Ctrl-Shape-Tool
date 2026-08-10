@@ -57,6 +57,18 @@ class UiInteractionTests(unittest.TestCase):
             round(2.5 * control._SLIDER_FACTOR),
         )
 
+    def test_joint_size_default_is_at_slider_center(self) -> None:
+        control = NumericControl(
+            (1.0,), (0.0, 30.0),
+            context_label="Joint Size", slider_center=1.0,
+        )
+        slider = control.sliders[0]
+        self.assertEqual(slider.value(), 0)
+        slider.setValue(slider.minimum())
+        self.assertEqual(control.fields[0].value(), 0.0)
+        slider.setValue(slider.maximum())
+        self.assertEqual(control.fields[0].value(), 30.0)
+
     def test_color_dialog_has_current_colors_and_explicit_actions(self) -> None:
         colors = (("yellow_ctrl", QtGui.QColor("yellow")),
                   ("red_ctrl", QtGui.QColor("red")),
@@ -96,6 +108,14 @@ class UiInteractionTests(unittest.TestCase):
         swatches[1].click()
         self.assertEqual(previewed[-1].name(), QtGui.QColor("cyan").name())
         self.assertEqual(dialog.picker.currentColor().name(), QtGui.QColor("cyan").name())
+        dialog.close()
+
+    def test_custom_color_context_menu_uses_japanese_labels(self) -> None:
+        dialog = ColorPreviewDialog(QtGui.QColor("white"), ())
+        menu, edit, remove = dialog._create_custom_menu()
+        self.assertEqual(edit.text(), "編集")
+        self.assertEqual(remove.text(), "削除")
+        menu.close()
         dialog.close()
 
     def test_existing_top_level_window_is_found(self) -> None:

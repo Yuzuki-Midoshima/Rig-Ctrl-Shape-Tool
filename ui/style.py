@@ -11,6 +11,7 @@ FIELD_RANGES = {
     "rotate": TransformLimits.ROTATE,
     "move": TransformLimits.MOVE,
     "line_width": TransformLimits.LINE_WIDTH,
+    "joint_size": TransformLimits.JOINT_SIZE,
 }
 STANDARD_COLOR_COLUMNS = (
     ("#1A1A1A", "#424242", "#757575", "#9E9E9E", "#D0D0D0", "#F5F5F5"),

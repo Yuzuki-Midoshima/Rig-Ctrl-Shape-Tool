@@ -50,6 +50,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             ("rotate", "Rotate", (0.0, 0.0, 0.0)),
             ("move", "Move", (0.0, 0.0, 0.0)),
             ("line_width", "Line Width", (0.0,)),
+            ("joint_size", "Joint Size", (1.0,)),
         )
         for key, label, defaults in specs:
             header = SectionHeader(label)
@@ -58,6 +59,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
                 defaults,
                 FIELD_RANGES[key],
                 context_label=label,
+                slider_center=defaults[0] if key == "joint_size" else None,
             )
             root.addWidget(control)
             self._controls[key] = control
@@ -85,7 +87,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
                     )
                     row.addWidget(button)
                 root.addLayout(row)
-            if key != "line_width":
+            if key != "joint_size":
                 root.addWidget(self._separator())
         root.addWidget(self._separator())
         color_header = SectionHeader("Color")
@@ -170,7 +172,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
         self.sync_values()
 
     def _reset_context_value(self, group: str, axis: int) -> None:
-        if group in ("uniform", "line_width"):
+        if group in ("uniform", "line_width", "joint_size"):
             self._reset(group)
         else:
             self._reset_axis(group, axis)

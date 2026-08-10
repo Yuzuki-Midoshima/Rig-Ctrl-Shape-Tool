@@ -35,6 +35,7 @@ class TransformValues:
     rotate: tuple[float, float, float] = (0.0, 0.0, 0.0)
     move: tuple[float, float, float] = (0.0, 0.0, 0.0)
     line_width: float = 0.0
+    joint_size: float = 1.0
 
 
 @dataclass(frozen=True)

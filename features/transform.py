@@ -47,6 +47,19 @@ class TransformFeature:
         self.cancel_color()
         self.cancel_preview()
         cvs = self._selection.cvs()
+        if group == "joint_size":
+            joints = self._selection.joints()
+            if not joints:
+                raise InvalidSelectionError("Select one or more joints")
+            with self._scene.undo_chunk("RigCtrlShapeApplyValue"):
+                for joint in joints:
+                    current = self._scene.joint_size(joint)
+                    if current is not None:
+                        self._scene.set_joint_size(
+                            joint, current * self._state.values.joint_size
+                        )
+            self.applied()
+            return
         if not cvs:
             raise InvalidSelectionError("Select a controller with a NURBS curve shape")
 
@@ -69,20 +82,38 @@ class TransformFeature:
             except RuntimeError:
                 continue
 
+    def _apply_joint_size(self, joints: Sequence[str]) -> None:
+        if not self._state.joint_size_dirty:
+            return
+        for joint in joints:
+            try:
+                current = self._scene.joint_size(joint)
+                if current is not None:
+                    self._scene.set_joint_size(
+                        joint, current * self._state.values.joint_size
+                    )
+            except RuntimeError:
+                continue
+
     def apply(self) -> None:
         self.cancel_color()
         if self.has_active_preview():
             self.commit_preview()
             self._state.line_width_dirty = False
+            self._state.joint_size_dirty = False
             self.applied()
             return
         cvs = self._selection.cvs()
-        if not cvs:
-            raise InvalidSelectionError("Select a controller with a NURBS curve shape")
+        joints = self._selection.joints()
+        if not cvs and not joints:
+            raise InvalidSelectionError("Select a controller or one or more joints")
         with self._scene.undo_chunk("RigCtrlShapeApply"):
-            self._transform_selection()
-            self._apply_line_width(self._selection.shapes())
+            if cvs:
+                self._transform_selection()
+                self._apply_line_width(self._selection.shapes())
+            self._apply_joint_size(joints)
         self._state.line_width_dirty = False
+        self._state.joint_size_dirty = False
         self.applied()
 
     def _rotate_90(self, axis: int) -> None:

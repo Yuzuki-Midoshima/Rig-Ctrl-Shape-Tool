@@ -36,3 +36,4 @@ class TransformLimits:
     ROTATE = (-180.0, 180.0)
     MOVE = (-100.0, 100.0)
     LINE_WIDTH = (-30.0, 30.0)
+    JOINT_SIZE = (0.0, 30.0)

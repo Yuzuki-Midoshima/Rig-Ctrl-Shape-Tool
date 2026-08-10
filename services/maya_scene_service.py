@@ -47,6 +47,15 @@ class MayaSceneService:
         if is_settable(plug):
             cmds.setAttr(plug, value)
 
+    def joint_size(self, joint: str) -> float | None:
+        plug = f"{joint}.radius"
+        return float(cmds.getAttr(plug)) if cmds.objExists(plug) else None
+
+    def set_joint_size(self, joint: str, value: float) -> None:
+        plug = f"{joint}.radius"
+        if is_settable(plug):
+            cmds.setAttr(plug, value)
+
     def open_undo(self, name: str) -> None:
         cmds.undoInfo(openChunk=True, chunkName=name)
 

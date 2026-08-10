@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import maya.cmds as cmds
+
 from ..maya import utils as maya_utils
 
 
@@ -25,6 +27,10 @@ class SelectionService:
 
     def controller_cvs(self, controller: str) -> list[str]:
         return maya_utils.shape_cvs(controller)
+
+    def joints(self) -> list[str]:
+        """Return individually selected joint nodes."""
+        return cmds.ls(selection=True, long=True, type="joint") or []
 
     def curve_shapes(self, controller: str) -> list[str]:
         """Return editable NURBS curve shapes below one controller."""

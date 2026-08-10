@@ -2,7 +2,7 @@
 
 ## Project
 
-MayaのNURBS Curveコントローラを非破壊Previewしながら編集するTA向けツールです。Uniform Scale、Scale、Rotate、Move、Line Width、Color、Copy/Paste Replace/Add、Disconnectを提供します。
+MayaのNURBS Curveコントローラを非破壊Previewしながら編集するTA、アニメーター向けツールです。Uniform Scale、Scale、Rotate、Move、Line Width、Color、Copy/Paste Replace/Add、Disconnectを提供します。
 
 リグ本体のTransformや接続を不用意に変更せず、Shape CVを安全に調整できること、未確定編集をRollbackできること、長期保守できる責務分離を目的としています。
 
