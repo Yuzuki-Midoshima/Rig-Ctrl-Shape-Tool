@@ -13,7 +13,7 @@ Scale / Rotate / Move / Line Width / Color / Shape Copyなど、コントロー�
 特に、
 
 **「調整結果を確認しながら試せること」**
-**「リグ本体のTransformや接続を壊さないこと」**
+**「既存リグへの影響をできるだけ抑えること」**
 **「専門的な操作を意識しなくても簡単に扱えること」**
 **「細かな調整を繰り返しても操作が煩雑にならないこと」**
 
@@ -36,7 +36,8 @@ Scale / Rotate / Move / Line Width / Color / Shape Copyなど、コントロー�
   Color Picker / HSV / RGB / HTML / Default Colors / Custom Colorsなど、複数の方法から色を調整できます。
 
 * **Copy / Paste Shape**
-  Controller Transformや既存リグを維持したまま、Curve ShapeをReplace / Addできます。
+
+  既存リグへの影響を考慮しながら、Controller ShapeをReplace / Addできます。
 
 * **Line Width / Joint Size**
   CurveのLine WidthやJoint Sizeも同じUIから調整できます。
@@ -391,29 +392,46 @@ Color Picker、HSV、RGB、HEX、Previewなど複数の入力方法を組み合�
 
 **Copy Rig / Paste Rigは、本ツールで特に重視している機能のひとつです。**
 
-既存ControllerのCurve Shapeをコピーし、別のControllerへ移植できます。
+完成済みリグのControllerについて、**既存リグへの影響を考慮しながら、見た目のCurve Shapeを別のControllerのShapeへ変更**できます。
 
-単純にCurveを複製するのではなく、
+この機能では、一般的な「コピー元 → コピー先」というCopy / Pasteとは少し異なり、最初に**基準とする既存リグController**を`Copy Rig`で記録します。
 
-**Controllerが持つリグ上の役割やTransformを維持したまま、見た目のShapeだけを変更する**
+その後、新しい見た目として使用したいControllerを選択して`Paste Rig`を実行すると、選択したModeに応じてController Shapeが再構築されます。
 
-ことを目的としています。
+```text
+Existing Rig Controller
+        │
+        │ Copy Rig
+        ▼
+   Record Target
+        │
+        │
+New Shape Controller
+        │
+        │ Paste Rig
+        ▼
+Rebuild According to Mode
+```
 
-通常、完成済みのControllerを別のShapeへ変更する場合は、Transform、Shape Node、Connection、Display設定など、既存リグへの影響を考慮する必要があります。
-
-本ツールでは、この処理を
-
-**Copy Rig → 対象Controllerを選択 → Paste Rig**
-
-というシンプルな操作へまとめています。
+Replaceでは記録した既存ControllerのShapeを置き換え、Addでは新しいControllerを構築して対応可能なTransform接続を移行します。
 
 ---
 
 ## Replace
 
-`Paste Mode: Replace`では、対象Controllerの既存Shapeをコピー元のShapeへ置き換えます。
+`Paste Mode: Replace`では、`Copy Rig`で記録した既存リグControllerのShapeを、`Paste Rig`実行時に選択しているControllerのShapeへ置き換えます。
 
-Controller Transformそのものを交換するのではなく、Curve Shapeを対象Controllerへ移植します。
+```text
+Existing Rig Controller
+Transform / Rig Role / Transform Connections
+              +
+              │
+              │ Shape Replace
+              ▼
+Shape from Selected Controller
+```
+
+置き換える中心はCurve Shapeであり、記録したControllerのリグ上の役割を維持したまま見た目を変更することを目的としています。
 
 そのため、
 
@@ -422,53 +440,63 @@ Controller Transformそのものを交換するのではなく、Curve Shapeを�
 * Scale
 * Pivot
 
-を不用意に変更せず、既存Controllerの位置やリグ上の役割を維持したまま見た目を変更できます。
+など、既存Controllerが持つTransformを不用意に変更せずにShapeを変更できます。
 
-「このControllerの動作や接続はそのままで、Shapeだけ別のControllerと同じものにしたい」
+「このControllerの動作や配置はそのまま維持して、操作しやすい別のShapeへ変更したい」
 
 といった場合に使用できます。
+
+Shape提供側として選択したControllerは、移植処理後、安全に削除可能な場合は整理されます。
 
 ---
 
 ## Add
 
-`Paste Mode: Add`では、既存Shapeを残したままコピーしたShapeを追加します。
+`Paste Mode: Add`では、`Copy Rig`で記録した既存リグControllerをもとに新しいControllerを構築し、`Paste Rig`実行時に選択しているControllerのShapeを使用して再構成します。
 
-複数のCurve Shapeを組み合わせたControllerを作成したい場合や、既存ControllerへShapeを追加して視認性・選択性を調整したい場合に使用できます。
+この処理では、複製時に生成された既存Shapeをそのまま残すのではなく、新しい見た目として使用するShapeへ置き換えたうえで、元のControllerから対応可能なTransform接続を新しいControllerへ移行します。
+
+Replaceが**記録した既存Controllerを維持したままShapeを置き換える処理**なのに対して、Addは**新しいControllerを構築し、対応可能なTransform接続を移行する処理**です。
+
+同じShape変更でも内部の処理方法が異なるため、用途に応じてReplace / Addを選択できます。
 
 ---
 
 ## Preserve Curve Definition
 
-Copy / Pasteでは、CV位置だけをコピーするのではありません。
+Copy / Pasteでは、CV位置だけではなく、Curve Shapeを再構築するために必要な情報を取得します。
 
-Curve Shapeを再現するために必要な、
+主に、
 
+* CV
 * Degree
 * Knot
 * Form
 * Rational
-* Display Settings
 
-などの情報もCaptureします。
+などのCurve定義を使用してShapeを再構築します。
 
-Periodic CurveやRational Curveも考慮した構成です。
+これにより、単純なCurveだけでなく、Periodic CurveやRational Curveも考慮したShape移植を行います。
+
+Display SettingsはCurve定義とは別に扱います。
+
+記録した既存ControllerのShapeから必要なDisplay設定を取得し、生成するShapeへ適用することで、Controllerとしての表示状態を可能な範囲で引き継ぎます。
 
 ---
 
 ## Preserve Rig Information
 
-完成済みControllerでは、Shape以外にも表示設定やConnectionなど、既存リグの一部として必要な情報を持っている場合があります。
+完成済みControllerでは、Shapeだけでなく、TransformやConnectionなど、リグ上の役割に関わる情報を持っている場合があります。
 
-Shape Replace時には、こうした情報を不用意に失わないよう、必要なDisplay設定やConnectionの移行も考慮しています。
+Copy / Pasteでは、単にCurve Shapeを複製するだけではなく、**記録したControllerがリグの中で担っている役割を考慮しながら、見た目を変更すること**を重視しています。
 
-この機能で重視しているのは、
+Replaceでは、記録した既存Controllerを維持したままShapeを置き換えます。
 
-**「新しいControllerを作って置き換える」のではなく、「既存Controllerを維持してShapeだけを変更する」**
+Addでは、新しいControllerを構築してShapeを再作成し、元のControllerから対応可能なTransform接続を移行します。
 
-ことです。
+処理方法は異なりますが、どちらもControllerの見た目を変更する際に、既存リグへの影響を抑えることを目的としています。
 
-リガーがController Shapeを整理・統一する用途だけでなく、アニメーターが既存リグを自分にとって選択しやすいShapeへ変更する用途も想定しています。
+リガーがController Shapeを整理・変更する用途だけでなく、アニメーターが既存リグを自分にとって扱いやすいShapeへ変更する用途も想定しています。
 
 ---
 
@@ -479,16 +507,20 @@ Shape Copy / Pasteは、このツール全体の設計方針を特に強く反�
 リガーがController Shapeを統一したい場合だけでなく、アニメーターが、
 
 「このControllerはもう少し選択しやすい形にしたい」
+
 「同じ役割のControllerとShapeを揃えたい」
-「操作しづらいので、別のControllerと同じ形にしたい」
+
+「操作しづらいので、別のShapeへ変更したい」
 
 と感じる場面でも使用できます。
 
-通常であればShape Node、Transform、Pivot、Connectionなどを理解しながら行う必要がある操作を、
+通常であればShape Node、Transform、Pivot、Connectionなどを確認しながら行う必要がある操作を、
 
-**Copy → Paste**
+**基準とするRigを記録 → 新しいShapeを選択 → Modeに応じて再構築**
 
-という簡単な操作へまとめています。
+という分かりやすい操作へまとめています。
+
+Shapeそのものをコピーする操作ではなく、**既存リグへの影響を考慮しながらControllerの見た目を変更するためのワークフロー**として設計しています。
 
 ---
 
@@ -522,13 +554,32 @@ ControllerおよびCurve Shapeの接続を整理し、必要なAttribute状態�
 
 Shapeを別のControllerから移植する場合は、
 
-1. コピー元Controllerを選択
-2. Copy Rig
-3. Replace / Addを選択
-4. コピー先Controllerを選択
-5. Paste Rig
+1. **基準とする既存リグController**を選択
+2. `Copy Rig`で記録
+3. `Replace / Add`を選択
+4. **新しい見た目として使用したいController**を選択
+5. `Paste Rig`を実行
+6. 選択したModeに応じてController Shapeを再構築
 
-という流れで完結します。
+という流れで操作します。
+
+```text
+Select Existing Rig
+        ↓
+     Copy Rig
+        ↓
+Choose Replace / Add
+        ↓
+ Select New Shape
+        ↓
+     Paste Rig
+        ↓
+Rebuild Controller Shape
+```
+
+`Replace`では記録した既存ControllerのShapeを置き換え、`Add`では新しいControllerを構築して対応可能なTransform接続を移行します。
+
+一般的なCopy / PasteとはShapeの移動方向が異なるため、**`Copy Rig`では新しいShapeではなく、基準とする既存リグControllerを先に記録すること**が操作上のポイントです。
 
 ---
 
@@ -588,7 +639,7 @@ PreviewやColor EditについてもApply前の状態を保持し、CancelやWind
 * Previewで結果を確認してから確定できる
 * Color Dialogを開いたままMayaを操作できる
 * Current Colorsから既存色を再利用できる
-* Copy / PasteでTransformを変更せずShapeだけ交換できる
+* Copy / Pasteで既存リグの役割を考慮しながらShapeを変更できる
 * 複数Controllerをまとめて調整できる
 
 といった、小さな挙動を積み重ねています。
@@ -650,7 +701,7 @@ Scale / Rotateでは、選択全体をひとつのShapeとして処理するの�
 
 実制作リグへの使用を想定し、破壊的な操作には複数の保護を設けています。
 
-* Referenced Controllerへの危険な編集を拒否
+* Copy / PasteおよびDisconnectでReferenced Controllerへの対象操作を拒否
 * 不正なSelectionを操作前に検出
 * Copy Buffer消失を検出
 * Preview / Color Sessionの二重開始を防止
@@ -732,7 +783,6 @@ Pure Python Test、Maya Integration Test、UI Regression Testを用意してい�
 * 複数Controller
 * Periodic / Rational Curve
 * Copy / Replace / Add
-* Display設定
 * Connection移行
 * Disconnect
 * Namespace
@@ -788,14 +838,9 @@ RepositoryをMayaのscriptsディレクトリへ配置します。
 
 ## Launch
 
-```python
-from rig_ctrl_shape_tool.app import show
-show()
-```
+通常起動には、Repository直下の`launch.py`を使用します。
 
-## Shelf
-
-MayaでPython Shelf Buttonを作成し、以下のコードを登録します。
+Maya Script EditorのPythonタブから起動する場合：
 
 ```python
 import os
@@ -803,6 +848,7 @@ import runpy
 import maya.cmds as cmds
 
 maya_dir = os.path.normpath(cmds.internalVar(userAppDir=True))
+
 launch_file = os.path.join(
     maya_dir,
     "scripts",
@@ -812,9 +858,15 @@ launch_file = os.path.join(
 runpy.run_path(launch_file, run_name="__main__")
 ```
 
-`launch.py`は通常起動用です。
+`launch.py`がTool Packageの読み込みと起動を行います。
 
-開発中にモジュールを再読み込みする場合は`dev_launch.py`を使用します。
+`launch.py`は通常起動用のEntry Pointです。
+
+## Shelf
+
+上記のScript Editor用コードをPython Shelf Buttonへ登録することで、通常使用時はShelfから`launch.py`を実行できます。
+
+`dev_launch.py`は開発用のImport Entryとして配置しています。
 
 ---
 
@@ -877,7 +929,7 @@ Rig-Ctrl-Shape-Tool/
 * よく使う色を登録して再利用できる
 * Current Colorsから既存Controllerと色を合わせられる
 * Color Dialogを開いたままMayaを操作できる
-* Copy / PasteでTransformを変更せずShapeだけ交換できる
+* Copy / Pasteで既存リグの情報を考慮しながらControllerの見た目を変更できる
 * 複雑なCurve Shapeも可能な限り維持して移植できる
 * 複数Controllerでも自然に動作する
 * 操作をやめれば未確定の変更は元へ戻る
