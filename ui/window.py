@@ -16,11 +16,18 @@ from ..features import (
     PreviewFeature,
     TransformFeature,
 )
+from ..services import ShapeLibraryService
 from .controls import NumericControl
 from .color_dialog import ColorPreviewDialog
 from .color_swatches import CurrentColorsWidget
 from .sections import SectionHeader
-from .style import APPLY_STYLE, DISCONNECT_STYLE, FIELD_RANGES, RESET_STYLE
+from .style import (
+    APPLY_STYLE,
+    DISCONNECT_STYLE,
+    FIELD_RANGES,
+    RESET_STYLE,
+    WINDOW_LAUNCH_STYLE,
+)
 
 
 class RigCtrlShapeWindow(QtWidgets.QDialog):
@@ -28,7 +35,8 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
 
     def __init__(self, transform: TransformFeature, preview: PreviewFeature,
                  color: ColorFeature, copy_paste: CopyPasteFeature, disconnect: DisconnectFeature,
-                 controls: ControlsFeature, parent=None) -> None:
+                 controls: ControlsFeature, shape_library: ShapeLibraryService,
+                 parent=None) -> None:
         super().__init__(parent)
         self.transform_feature = transform
         self.preview_feature = preview
@@ -36,6 +44,7 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
         self.copy_paste_feature = copy_paste
         self.disconnect_feature = disconnect
         self.controls_feature = controls
+        self.shape_library_service = shape_library
         self.setObjectName("RigCtrlShapeTool")
         self.setWindowTitle("Rig Controller Shape Tool")
         self.setMinimumWidth(280)
@@ -88,28 +97,48 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
                     row.addWidget(button)
                 root.addLayout(row)
             if key != "joint_size":
-                root.addWidget(self._separator())
+                separator = self._separator()
+                if key == "line_width":
+                    # Keep this final numeric pair visually grouped while
+                    # retaining the same divider used by every other section.
+                    separator.setFixedHeight(1)
+                root.addWidget(separator)
         root.addWidget(self._separator())
-        color_header = SectionHeader("Color")
-        root.addWidget(color_header)
-        color_header.resetClicked.connect(self._reset_color)
-        root.addWidget(QtWidgets.QLabel("Current Colors"))
-        self.color_row = CurrentColorsWidget(framed=False, parent=self)
-        self.color_row.colorClicked.connect(self._reuse_color)
-        root.addWidget(self.color_row)
-        pick = QtWidgets.QPushButton("Pick Color")
-        pick.setFixedHeight(28)
-        pick.clicked.connect(self._pick_color)
-        root.addWidget(pick)
+        compact_actions = QtWidgets.QVBoxLayout()
+        compact_actions.setSpacing(1)
         self.preview_box = QtWidgets.QCheckBox("Real Time Preview")
         self.preview_box.toggled.connect(self.preview_feature.set_enabled)
-        root.addWidget(self.preview_box)
+        self.preview_box.setChecked(self.preview_feature.is_enabled)
+        compact_actions.addWidget(self.preview_box)
         apply = QtWidgets.QPushButton("Apply")
-        apply.setFixedHeight(32)
+        apply.setFixedHeight(34)
         apply.setStyleSheet(APPLY_STYLE)
         apply.clicked.connect(self._apply)
-        root.addWidget(apply)
-        root.addWidget(QtWidgets.QLabel("Paste Mode"))
+        compact_actions.addWidget(apply)
+        color_header = SectionHeader("Color")
+        compact_actions.addWidget(color_header)
+        color_header.resetClicked.connect(self._reset_color)
+        compact_actions.addWidget(QtWidgets.QLabel("Current Colors"))
+        self.color_row = CurrentColorsWidget(framed=False, parent=self)
+        self.color_row.colorClicked.connect(self._reuse_color)
+        compact_actions.addWidget(self.color_row)
+        pick = QtWidgets.QPushButton("Pick Color")
+        pick.setObjectName("pickColorButton")
+        pick.setFixedHeight(28)
+        pick.setStyleSheet(WINDOW_LAUNCH_STYLE)
+        pick.clicked.connect(self._pick_color)
+        compact_actions.addWidget(pick)
+        compact_actions.addWidget(QtWidgets.QLabel("Shape"))
+        shape_library_button = QtWidgets.QPushButton("Shape Library")
+        shape_library_button.setObjectName("shapeLibraryButton")
+        shape_library_button.setFixedHeight(28)
+        shape_library_button.setStyleSheet(WINDOW_LAUNCH_STYLE)
+        shape_library_button.clicked.connect(
+            lambda: self._run_user_action(self.shape_library_service.show)
+        )
+        compact_actions.addWidget(shape_library_button)
+        compact_actions.addWidget(QtWidgets.QLabel("Paste Mode"))
+        root.addLayout(compact_actions)
         modes = QtWidgets.QHBoxLayout()
         self.replace = QtWidgets.QRadioButton("Replace")
         self.replace.setChecked(True)
@@ -121,22 +150,14 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
         copy = QtWidgets.QPushButton("Copy Rig")
         paste = QtWidgets.QPushButton("Paste Rig")
         copy.clicked.connect(lambda: self._run_user_action(self.copy_paste_feature.copy))
-        paste.clicked.connect(lambda: self._run_user_action(
-            self.copy_paste_feature.paste_add
-            if self.add.isChecked()
-            else self.copy_paste_feature.paste_replace
-        ))
+        paste.clicked.connect(self._paste)
         actions.addWidget(copy)
         actions.addWidget(paste)
         root.addLayout(actions)
         disc = QtWidgets.QPushButton("Disconnect All Nodes")
         disc.setFixedHeight(18)
         disc.setStyleSheet(DISCONNECT_STYLE)
-        disc.clicked.connect(
-            lambda: self._run_user_action(
-                self.disconnect_feature.disconnect_selected
-            )
-        )
+        disc.clicked.connect(self._disconnect)
         root.addWidget(disc)
         reset = QtWidgets.QPushButton("Reset All Values")
         reset.setFixedHeight(32)
@@ -158,6 +179,42 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(self, "Rig Controller Shape Tool", str(error))
         except (RuntimeError, ValueError) as error:
             QtWidgets.QMessageBox.warning(self, "Rig Controller Shape Tool", str(error))
+
+    def _confirm(self, message: str) -> bool:
+        buttons = (
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No
+        )
+        result = QtWidgets.QMessageBox.warning(
+            self,
+            "Rig Controller Shape Tool",
+            message,
+            buttons,
+            QtWidgets.QMessageBox.StandardButton.No,
+        )
+        return result == QtWidgets.QMessageBox.StandardButton.Yes
+
+    def _paste(self) -> None:
+        def action() -> None:
+            if self.copy_paste_feature.paste_target_has_connections() and not self._confirm(
+                "The paste target has connections. Continue pasting?"
+            ):
+                return
+            paste = (
+                self.copy_paste_feature.paste_add
+                if self.add.isChecked()
+                else self.copy_paste_feature.paste_replace
+            )
+            paste()
+
+        self._run_user_action(action)
+
+    def _disconnect(self) -> None:
+        if not self._confirm(
+            "This will disconnect all nodes from the selected controller. Continue?"
+        ):
+            return
+        self._run_user_action(self.disconnect_feature.disconnect_selected)
 
     def _reset(self, key: str) -> None:
         self.controls_feature.reset(key)
@@ -189,7 +246,6 @@ class RigCtrlShapeWindow(QtWidgets.QDialog):
 
     def _apply(self) -> None:
         self._run_user_action(self.transform_feature.apply)
-        self.preview_box.setChecked(False)
 
     def _pick_color(self) -> None:
         if self._color_dialog and self._color_dialog.isVisible():

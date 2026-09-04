@@ -82,3 +82,11 @@ class MayaSceneService:
 
     def warning(self, message: str, error: Exception | None = None) -> None:
         warn(message, error)
+
+    def show_status(self, message: str) -> None:
+        """Show a short success message in Maya's active viewport."""
+        cmds.inViewMessage(
+            amg=f"<hl>{message}</hl>",
+            pos="midCenter",
+            fade=True,
+        )

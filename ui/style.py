@@ -2,9 +2,10 @@
 
 from ..core.constants import TransformLimits
 
-APPLY_STYLE = "background-color: rgb(77, 99, 120);"
+APPLY_STYLE = "background-color: rgb(58, 103, 112);"
 RESET_STYLE = "background-color: rgb(87, 102, 120);"
 DISCONNECT_STYLE = "background-color: rgb(107, 87, 87);"
+WINDOW_LAUNCH_STYLE = "background-color: rgb(48, 64, 82);"
 FIELD_RANGES = {
     "uniform": TransformLimits.SCALE,
     "scale": TransformLimits.SCALE,

@@ -43,6 +43,16 @@ class SessionTests(unittest.TestCase):
 
 
 class TransformLogicTests(unittest.TestCase):
+    def test_preview_stays_enabled_after_commit(self) -> None:
+        state = ToolState()
+        preview = PreviewFeature(state, object(), object())
+        state.preview.lifecycle.begin()
+
+        preview.commit()
+
+        self.assertTrue(preview.is_enabled)
+        self.assertFalse(preview.is_active)
+
     def test_context_apply_isolates_one_axis(self) -> None:
         current = TransformValues(scale=(2, 3, 4), rotate=(10, 20, 30), move=(5, 6, 7))
         isolated = isolated_transform_values(current, "scale", 1)

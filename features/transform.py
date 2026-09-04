@@ -59,6 +59,7 @@ class TransformFeature:
                             joint, current * self._state.values.joint_size
                         )
             self.applied()
+            self._scene.show_status("APPLIED")
             return
         if not cvs:
             raise InvalidSelectionError("Select a controller with a NURBS curve shape")
@@ -72,6 +73,7 @@ class TransformFeature:
             else:
                 self._transform_selection(isolated)
         self.applied()
+        self._scene.show_status("APPLIED")
 
     def _apply_line_width(self, shapes: Sequence[str]) -> None:
         if not self._state.line_width_dirty:
@@ -102,6 +104,7 @@ class TransformFeature:
             self._state.line_width_dirty = False
             self._state.joint_size_dirty = False
             self.applied()
+            self._scene.show_status("APPLIED")
             return
         cvs = self._selection.cvs()
         joints = self._selection.joints()
@@ -115,6 +118,7 @@ class TransformFeature:
         self._state.line_width_dirty = False
         self._state.joint_size_dirty = False
         self.applied()
+        self._scene.show_status("APPLIED")
 
     def _rotate_90(self, axis: int) -> None:
         self.before_value_change()

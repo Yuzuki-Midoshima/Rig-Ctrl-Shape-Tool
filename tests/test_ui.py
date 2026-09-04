@@ -146,8 +146,10 @@ class UiInteractionTests(unittest.TestCase):
             update=noop, reset=noop, reset_all=noop, reset_axis=noop,
             current_values=noop, begin_preview_edit=noop, end_preview_edit=noop,
         )
+        shape_library = SimpleNamespace(show=noop)
         window = RigCtrlShapeWindow(
-            transform, preview, color, copy_paste, disconnect, controls
+            transform, preview, color, copy_paste, disconnect, controls,
+            shape_library,
         )
         emissions = []
         window.closing.connect(lambda: emissions.append(True))
@@ -156,6 +158,36 @@ class UiInteractionTests(unittest.TestCase):
         window.close()
         self.app.processEvents()
         self.assertEqual(emissions, [True])
+
+    def test_shape_library_button_is_compact_and_launches_window(self) -> None:
+        noop = lambda *args, **kwargs: None
+        launched = []
+        transform = SimpleNamespace(
+            rotate_x_90=noop, rotate_y_90=noop, rotate_z_90=noop,
+            apply=noop, apply_value=noop,
+        )
+        preview = SimpleNamespace(set_enabled=noop, refresh=noop, is_enabled=False)
+        color = SimpleNamespace(begin_edit=noop, reset=noop, update_preview=noop,
+                                commit=noop, rollback=noop, get_current_view_data=noop)
+        copy_paste = SimpleNamespace(copy=noop, paste_replace=noop, paste_add=noop)
+        disconnect = SimpleNamespace(disconnect_selected=noop)
+        controls = SimpleNamespace(update=noop, reset=noop, reset_all=noop,
+                                   reset_axis=noop, current_values=noop,
+                                   begin_preview_edit=noop, end_preview_edit=noop)
+        shape_library = SimpleNamespace(show=lambda: launched.append(True))
+        window = RigCtrlShapeWindow(
+            transform, preview, color, copy_paste, disconnect, controls,
+            shape_library,
+        )
+        button = window.findChild(QtWidgets.QPushButton, "shapeLibraryButton")
+        self.assertIsNotNone(button)
+        color_button = window.findChild(QtWidgets.QPushButton, "pickColorButton")
+        self.assertIsNotNone(color_button)
+        self.assertEqual(button.height(), color_button.height())
+        self.assertEqual(button.styleSheet(), color_button.styleSheet())
+        button.click()
+        self.assertEqual(launched, [True])
+        window.close()
 
 
 if __name__ == "__main__":

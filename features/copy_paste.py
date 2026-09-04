@@ -33,6 +33,7 @@ class CopyPasteFeature:
         if not self._selection.curve_shapes(controller):
             raise UnsupportedShapeError("Selected controller has no NURBS curve shape")
         self._state.copy_buffer.controller = self._selection.long_name(controller)
+        self._scene.show_status("COPIED")
 
     def paste_replace(self) -> None:
         """Replace the copied controller's shapes with the selected shapes."""
@@ -41,6 +42,13 @@ class CopyPasteFeature:
     def paste_add(self) -> None:
         """Create an additional controller using the selected shapes."""
         self._paste("add")
+
+    def paste_target_has_connections(self) -> bool:
+        """Report whether the copied paste target controller is connected."""
+        rig = self._state.copy_buffer.controller
+        if not rig or not self._scene.exists(rig):
+            raise MissingCopyBufferError("The copied Rig Controller is not available")
+        return self._connections.has_connections(rig)
 
     def _paste(self, mode: Literal["replace", "add"]) -> None:
         rig = self._state.copy_buffer.controller
@@ -76,3 +84,4 @@ class CopyPasteFeature:
         except (RuntimeError, ValueError):
             self._scene.rollback_named_undo("RigCtrlShapePaste")
             raise
+        self._scene.show_status(f"PASTED ({mode.upper()})")

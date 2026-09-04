@@ -40,7 +40,6 @@ class PreviewFeature:
         if preview.undo_open:
             self._scene.close_undo()
         preview.lifecycle.commit()
-        preview.enabled = False
         preview.clear()
 
     def rollback(self, keep_enabled: bool = False) -> None:

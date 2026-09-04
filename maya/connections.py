@@ -28,6 +28,11 @@ def connection_pairs(node: str) -> list[tuple[str, str]]:
     return list(zip(raw[0::2], raw[1::2]))
 
 
+def has_connections(node: str) -> bool:
+    """Return whether a node has at least one incoming or outgoing connection."""
+    return bool(connection_pairs(node))
+
+
 def plug_on_node(pair: tuple[str, str], node: str) -> tuple[str, str] | None:
     prefix = f"{long_name(node)}."
     short_prefix = f"{node.rsplit('|', 1)[-1]}."

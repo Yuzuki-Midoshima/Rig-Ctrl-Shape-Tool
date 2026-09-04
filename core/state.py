@@ -16,7 +16,7 @@ class PreviewState:
     value_undo_stack: list[TransformValues] = field(default_factory=list)
     value_redo_stack: list[TransformValues] = field(default_factory=list)
     undo_open: bool = False
-    enabled: bool = False
+    enabled: bool = True
     lifecycle: EditSessionLifecycle = field(default_factory=EditSessionLifecycle)
 
     def clear(self) -> None:

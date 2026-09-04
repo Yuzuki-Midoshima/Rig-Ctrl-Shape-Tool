@@ -22,6 +22,7 @@ from .services import (
     CurveService,
     MayaSceneService,
     SelectionService,
+    ShapeLibraryService,
     WindowService,
 )
 from .ui import RigCtrlShapeWindow
@@ -53,6 +54,7 @@ def show() -> RigCtrlShapeWindow:
     connection_service = ConnectionService()
     window_service = WindowService()
     scene = MayaSceneService()
+    shape_library = ShapeLibraryService()
     transform = TransformFeature(state, selection, scene)
     preview = PreviewFeature(state, selection, scene)
     color = ColorFeature(state, selection, colors, scene)
@@ -83,6 +85,7 @@ def show() -> RigCtrlShapeWindow:
         copy_paste,
         disconnect,
         controls,
+        shape_library,
         parent=parent,
     )
     color.colors_changed = window.handle_color_state_changed

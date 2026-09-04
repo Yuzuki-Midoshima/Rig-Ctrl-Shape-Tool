@@ -9,6 +9,7 @@ class ConnectionService:
     """Expose only connection operations used by current Feature workflows."""
 
     transfer = staticmethod(connections.transfer_controller_connections)
+    has_connections = staticmethod(connections.has_connections)
     unlock = staticmethod(connections.unlock_node_attributes)
     disconnect = staticmethod(connections.disconnect_node_connections)
     hide_user_attributes = staticmethod(connections.hide_user_defined_attributes)
