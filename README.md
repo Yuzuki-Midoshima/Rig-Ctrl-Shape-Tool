@@ -1,4 +1,5 @@
-# Rig Controller Shape Tool
+# Rig Controller Shape Tool ![CI](https://github.com/Yuzuki-Midoshima/Rig-Ctrl-Shape-Tool/actions/workflows/ci.yml/badge.svg) ![Maya](https://img.shields.io/badge/Autodesk%20Maya-2026-0696D7) ![Python](https://img.shields.io/badge/Python-3.x-3776AB)
+
 
 <img src="docs/images/rig-controller-shape-tool.png" alt="Rig Controller Shape Tool window" width="276">
 

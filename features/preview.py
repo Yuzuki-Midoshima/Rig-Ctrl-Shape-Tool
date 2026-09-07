@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
 from ..core.state import ToolState
-from ..services import MayaSceneService, SelectionService
+
+if TYPE_CHECKING:
+    from ..services import MayaSceneService, SelectionService
 
 
 class PreviewFeature:

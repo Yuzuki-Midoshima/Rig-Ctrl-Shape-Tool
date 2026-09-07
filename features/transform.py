@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING
 
 from ..core.domain import TransformValues
 from ..core.errors import InvalidSelectionError
 from ..core.state import ToolState
 from ..core.transform_math import isolated_transform_values
-from ..services import MayaSceneService, SelectionService
+
+if TYPE_CHECKING:
+    from ..services import MayaSceneService, SelectionService
 
 
 class TransformFeature:
