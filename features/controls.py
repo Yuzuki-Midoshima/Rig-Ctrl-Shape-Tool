@@ -89,6 +89,15 @@ class ControlsFeature:
         self._state.preview.value_undo_stack.clear()
         self._state.preview.value_redo_stack.clear()
 
+    def rebase_values(self) -> None:
+        """Treat the current scene shape as a fresh transform baseline."""
+        self._state.reset_values()
+        self._state.line_width_dirty = False
+        self._state.joint_size_dirty = False
+        self._state.committed_values = replace(self._state.values)
+        self._state.preview.value_undo_stack.clear()
+        self._state.preview.value_redo_stack.clear()
+
     def restore_undo_values(self) -> bool:
         """Restore the inputs associated with a completed Maya Undo."""
         if not self._state.value_undo_stack:

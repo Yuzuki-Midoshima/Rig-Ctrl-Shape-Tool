@@ -72,11 +72,24 @@ def shape_cvs(controller: str) -> list[str]:
     if cmds.objExists(controller) and cmds.nodeType(controller) == "nurbsCurve":
         parents = cmds.listRelatives(controller, parent=True, fullPath=True) or []
         controller = parents[0] if parents else controller
-    return [
-        cv
-        for shape in nurbs_curve_shapes(controller)
-        for cv in cmds.ls(f"{shape}.cv[*]", flatten=True) or []
-    ]
+    return [cv for shape in nurbs_curve_shapes(controller) for cv in curve_shape_cvs(shape)]
+
+
+def curve_shape_cvs(shape: str) -> list[str]:
+    """Return all CV component names for one NURBS curve shape."""
+    if not cmds.objExists(shape) or cmds.nodeType(shape) != "nurbsCurve":
+        return []
+    return cmds.ls(f"{shape}.cv[*]", flatten=True, long=True) or []
+
+
+def selected_component_shapes() -> list[str]:
+    """Resolve the curve shapes owning the currently selected components."""
+    shapes = []
+    for component in cmds.ls(selection=True, flatten=True, long=True) or []:
+        node = component.split(".", 1)[0]
+        if cmds.objExists(node) and cmds.nodeType(node) == "nurbsCurve" and node not in shapes:
+            shapes.append(node)
+    return shapes
 
 
 def selected_shape_cvs() -> list[str]:

@@ -30,13 +30,36 @@ class MayaSceneService:
         scale = tuple(values.uniform * axis for axis in values.scale)
         cmds.scale(*scale, components, relative=True, worldSpace=True, pivot=pivot)
         cmds.rotate(*values.rotate, components, relative=True, worldSpace=True, pivot=pivot)
-        cmds.move(*values.move, components, relative=True, objectSpace=True)
+        # Scale and rotate are evaluated in world space, so Move must use the
+        # same coordinate frame.  Object-space translation follows the
+        # controller transform axes, which can make a requested single-axis
+        # move travel diagonally when the controller (or one of its parents)
+        # is rotated.  Preview sessions recapture the committed CV positions,
+        # making the adjusted shape the baseline for the next edit.
+        cmds.move(*values.move, components, relative=True, worldSpace=True)
 
     def cv_position(self, cv: str) -> tuple[float, float, float]:
         return tuple(cmds.xform(cv, query=True, objectSpace=True, translation=True))
 
     def set_cv_position(self, cv: str, position: Sequence[float]) -> None:
         cmds.xform(cv, objectSpace=True, translation=position)
+
+    def enter_component_edit(self, cvs: Sequence[str]) -> None:
+        """Select curve CVs and expose Maya's native component manipulators."""
+        cmds.select(list(cvs), replace=True)
+        cmds.selectMode(component=True)
+        cmds.setToolTo("Move")
+
+    def pointer_is_over_viewport(self) -> bool:
+        """Whether Maya currently reports a model panel below the pointer."""
+        panel = cmds.getPanel(underPointer=True)
+        return bool(panel and cmds.getPanel(typeOf=panel) == "modelPanel")
+
+    def leave_component_edit(self, controllers: Sequence[str]) -> None:
+        """Return to object selection while retaining manual CV edits."""
+        cmds.selectMode(object=True)
+        existing = [node for node in controllers if cmds.objExists(node)]
+        cmds.select(existing, replace=True) if existing else cmds.select(clear=True)
 
     def line_width(self, shape: str) -> float | None:
         plug = f"{shape}.lineWidth"

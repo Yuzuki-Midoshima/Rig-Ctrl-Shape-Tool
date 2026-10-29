@@ -113,7 +113,7 @@ class PreviewFeature:
             if preview.lifecycle.is_active:
                 preview.lifecycle.rollback()
             self._state.preview.clear()
-            self._scene.warning("Could not start Preview", error)
+            self._scene.warning("プレビューを開始できませんでした", error)
             return False
 
     def _restore(self) -> None:
@@ -146,7 +146,7 @@ class PreviewFeature:
             self._apply_current_values()
         except RuntimeError as error:
             self._cancel()
-            self._scene.warning("Could not update Preview", error)
+            self._scene.warning("プレビューを更新できませんでした", error)
 
     def _apply_current_values(self) -> None:
         for controller in self._selection.controllers():
@@ -178,7 +178,7 @@ class PreviewFeature:
                 self._restore()
         except RuntimeError as error:
             self._scene.warning(
-                "Some shapes could not be restored during Preview cancellation", error
+                "プレビューのキャンセル時に一部のシェイプを復元できませんでした", error
             )
         finally:
             preview = self._state.preview

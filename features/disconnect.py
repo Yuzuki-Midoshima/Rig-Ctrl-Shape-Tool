@@ -18,13 +18,13 @@ class DisconnectFeature:
         self._scene = scene
         self.cancel_sessions: Callable[[], None] = lambda: None
 
-    def disconnect_selected(self) -> None:
+    def disconnect_selected(self, rename_controller: bool = True) -> None:
         """Disconnect the selection inside one Maya-restorable Undo chunk."""
         controller = self._selection.first_controller()
         if not controller:
-            raise InvalidSelectionError("Select a controller to disconnect")
+            raise InvalidSelectionError("接続を解除するコントローラーを選択してください")
         if self._scene.is_referenced(controller):
-            raise UnsupportedShapeError("Referenced Controller connections cannot be removed")
+            raise UnsupportedShapeError("参照されたコントローラーの接続は解除できません")
         self.cancel_sessions()
         with self._scene.undo_chunk("RigCtrlShapeDisconnect"):
             for node in [controller, *self._selection.curve_shapes(controller)]:
@@ -33,4 +33,5 @@ class DisconnectFeature:
                 self._connections.hide_user_attributes(node)
             self._connections.show_default_attributes(controller)
             controller = self._connections.unparent(controller)
-            self._connections.rename(controller)
+            if rename_controller:
+                self._connections.rename(controller)

@@ -141,14 +141,14 @@ class NumericControl(QtWidgets.QWidget):
     ) -> tuple[QtWidgets.QMenu, QtGui.QAction, QtGui.QAction]:
         """Build a self-describing menu for one numeric field."""
         menu = QtWidgets.QMenu(self)
-        heading = menu.addAction(f"Target : {title}")
+        heading = menu.addAction(f"対象：{title}")
         heading.setEnabled(False)
         heading_font = heading.font()
         heading_font.setBold(True)
         heading.setFont(heading_font)
         menu.addSeparator()
-        apply_action = menu.addAction(f"APPLY  {title}")
-        reset_action = menu.addAction(f"RESET  {title}  ({reset_value:.4f})")
+        apply_action = menu.addAction(f"適用  {title}")
+        reset_action = menu.addAction(f"リセット  {title}  ({reset_value:.4f})")
         return menu, apply_action, reset_action
 
     def values(self) -> tuple[float, ...]:

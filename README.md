@@ -1,877 +1,854 @@
-# Rig Controller Shape Tool ![CI](https://github.com/Yuzuki-Midoshima/Rig-Ctrl-Shape-Tool/actions/workflows/ci.yml/badge.svg) ![Maya](https://img.shields.io/badge/Autodesk%20Maya-2026-0696D7) ![Python](https://img.shields.io/badge/Python-3.x-3776AB)
+# Rig Controller Shape Tool
+
+[![CI](https://github.com/Yuzuki-Midoshima/Rig-Ctrl-Shape-Tool/actions/workflows/ci.yml/badge.svg)](https://github.com/Yuzuki-Midoshima/Rig-Ctrl-Shape-Tool/actions/workflows/ci.yml)
+![Maya](https://img.shields.io/badge/Autodesk%20Maya-2026-0696D7)
+![Python](https://img.shields.io/badge/Python-3.x-3776AB)
+
+Autodesk Maya 2026上で、**リグコントローラーを安全かつ直感的に調整するためのツール**です。
+
+![Rig Controller Shape Tool](docs/images/rig-controller-shape-tool.png)
 
 
-<img src="docs/images/rig-controller-shape-tool.png" alt="Rig Controller Shape Tool window" width="276">
+拡大縮小 / 回転 / 移動 / 線幅 / カラー / シェイプのコピーなど、  コントローラー調整で頻繁に行う操作をひとつの画面にまとめています。
 
-Autodesk Maya(2026)上で、リグコントローラーのNURBS Curve Shapeを**安全かつ直感的に調整するためのツール**です。 
+リガーのリグ制作・調整だけでなく、アニメーターが完成したリグを壊すことなく自分が扱いやすい形・大きさ・色へ調整できることを想定しています。
 
-Scale / Rotate / Move / Line Width / Color / Shape Copyなど、コントローラー調整で頻繁に行う操作をひとつのUIにまとめています。
+**「選ぶ → 試す → 見る → 決める」**
 
-本ツールは、**リガーとアニメーターの両方が扱えるController編集ツール**として設計しています。
-
-リガーが効率よくControllerを整えられることはもちろん、アニメーターがリグ内部の構造を意識せずに完成したリグを壊すことなく、自分が操作しやすいShape・大きさ・色へ簡単に調整できることを目指しています。 
-
-特に、
-
-**「調整結果を確認しながら試せること」**
-**「既存リグへの影響をできるだけ抑えること」**
-**「専門的な操作を意識しなくても簡単に扱えること」**
-**「細かな調整を繰り返しても操作が煩雑にならないこと」**
-
-を重視して設計しています。
+というシンプルな操作で、  
+リグ内部の構造を過度に意識せずコントローラーを編集できることを重視しています。
 
 ---
 
-## Features
+# 主な機能
 
-* **Shape Transform**
-  Uniform Scale / XYZ Scale / Rotate / Move / +90° Rotation
+- **シェイプ調整**  
+  全体 / XYZごとの拡大縮小、回転、移動、90°回転
 
-* **Real Time Preview**
-  調整結果をViewportへリアルタイムに反映し、確認してから確定できます。
+- **リアルタイムプレビュー**  
+  数値やスライダーによる変更をビューポートへリアルタイムに反映
 
-* **Fine Adjustment**
-  Sliderと数値フィールドを使い分け、粗調整から細かな調整まで行えます。
+- **直接編集モード**  
+  Maya上でコントローラーシェイプを直接操作し、そのまま即時反映
 
-* **Color Editing**
-  Color Picker / HSV / RGB / HTML / Default Colors / Custom Colorsなど、複数の方法から色を調整できます。
+- **微調整**  
+  スライダーと数値入力を使い分け、大まかな調整から細かな調整まで対応
 
-* **Copy / Paste Shape**
+- **カラー編集**  
+  カラーピッカー / HSV / RGB / HEX / 既定色 / カスタムカラー
 
-  既存リグへの影響を考慮しながら、Controller ShapeをReplace / Addできます。
+- **シェイプライブラリ**  
+  別途制作したController Shape Libraryをツール内から利用
 
-* **Line Width / Joint Size**
-  CurveのLine WidthやJoint Sizeも同じUIから調整できます。
+- **シェイプのコピー / ペースト**  
+  既存リグへの影響を考慮しながら、コントローラーシェイプを置換 / 追加
 
-* **Apply / Reset / Rollback**
-  編集内容を確認しながら試し、必要な変更だけを確定できます。
+- **線幅 / ジョイントサイズ**  
+  ビューポート上の視認性を同じ画面から調整
 
-* **Undo / Redo**
-  Maya標準のUndo / Redoに対応しています。
+- **複数コントローラー対応**  
+  複数選択したコントローラーをまとめて編集
 
-* **Multiple Controller Support**
-  複数Controllerをまとめて選択した状態での編集に対応しています。
-
----
-
-## Overview
-
-リギングでは、Controllerを作成したあとにも、
-
-* キャラクターのシルエットに合わせて大きさを変更する
-* 見やすい角度へShapeを回転する
-* 左右や部位ごとに色を調整する
-* Shapeだけを操作しやすい位置へ移動する
-* 既存ControllerのShapeを別の形へ変更する
-
-といった細かな調整が何度も発生します。
-
-また、Controllerはリガーが作成して終わりとは限りません。
-
-実際にアニメーションを付ける中で、
-
-「もう少し大きい方が選択しやすい」
-「この角度から見たときにControllerが見えにくい」
-「別の色にした方が左右を判別しやすい」
-
-など、**アニメーター側でControllerを調整したい場面**も出てきます。 
- 
-Maya標準機能だけでもこれらの編集は可能ですが、CV選択、Component Modeへの切り替え、Pivot調整、Shape Nodeの扱いなどを理解したうえで、既存リグを破綻させないよう注意して操作する必要があり、時間と負担がかなり大きくなってしまいます。 
- 
-そこで本ツールでは、
-
-**「Controllerを選択した状態から、誰でも簡単に、直感的にShapeを調整できること」**
-
-を基本方針としています。 
-
-リガーにとっては、日常的なController調整を効率化するツールとして。
-アニメーターにとっては、リグ内部を直接編集せず、自分が扱いやすいControllerへ調整するためのツールとして。
-
-Preview、Rollback、Undo、Selection復元まで含め、**リグ内部の構造を過度に意識しなくても安全に試行錯誤できるワークフロー**を目指しています。
+- **Undo / ロールバック**  
+  試した結果を確認しながら、安全に操作前の状態へ戻すことが可能
 
 ---
 
-# Shape Editing
+# シェイプ編集
 
-Controller Shapeの大きさ・向き・位置を、**Controller Transformを変更せずに調整**できます。
+![シェイプ調整](docs/gifs/shape-transform.gif)
 
-Maya標準機能でCurve Shapeを編集する場合は、Component Modeへ切り替えてCVを選択し、編集内容に応じてScale / Rotate / Moveを行う必要があります。
+コントローラーのTransformを変更せず、  
+**カーブシェイプの大きさ・向き・位置を調整**できます。
 
-本ツールではControllerを選択したまま、ひとつのUIからShapeを調整できます。
+対応している操作は、
 
----
+- 全体の拡大縮小
+- XYZごとの拡大縮小
+- XYZ回転
+- 90°回転
+- XYZ移動
+- 線幅
+- ジョイントサイズ
 
-## Uniform Scale
+です。
 
-Controller Shape全体をXYZ均等に拡大・縮小します。
+Maya標準機能でカーブシェイプを編集する場合は、  
+コンポーネントモードへ切り替えてCVを選択し、  
+編集内容に応じて拡大縮小 / 回転 / 移動を行う必要があります。
 
-「もう少し大きくして選択しやすくしたい」
-「キャラクターに対して少し小さくしたい」
+本ツールでは、コントローラーを選択したまま  
+ひとつの画面からシェイプを調整できます。
 
-といった調整を、ひとつの値で行えます。
-
-数値入力だけでなくSliderからも操作できるため、Viewport上のControllerを見ながらｔサイズを調整できます。 
-
-
----
-
-## XYZ Scale
-
-X / Y / Zを個別にScaleできます。
-
-Uniform Scaleで全体のサイズを変更するだけでなく、
-
-* 横方向だけ広げる
-* 縦方向だけ縮める
-* 奥行きだけ調整する
-
-といった、Shapeそのものの細かな調整が可能です。
-
----
-
-## XYZ Rotate
-
-X / Y / Zを個別に回転できます。
-
-Controller Transformそのものを回転させるのではなく、**Curve Shapeを回転**するため、リグ上のTransformを維持したまま見た目の向きだけを変更できます。
-
-また、Controller Shapeの方向変更で頻繁に使用する、
-
-* X +90°
-* Y +90°
-* Z +90°
-
-をワンクリックで実行できます。
-
-大きな方向変更は+90°ボタン、細かな角度調整は数値フィールドやSliderという使い分けができます。
+```text
+コントローラーを選択
+        ↓
+拡大縮小 / 回転 / 移動
+        ↓
+ビューポートで確認
+        ↓
+微調整
+        ↓
+確定
+```
 
 ---
 
-## XYZ Move
+## シェイプ中心での変形
 
-X / Y / Z方向へCurve Shapeを移動できます。
+拡大縮小 / 回転では、  
+コントローラーのTransform Pivotではなく、
 
-Controller Transform自体を移動するのではなく、**Curve CV側を移動**します。
+**実際に表示されているカーブシェイプの中心**
 
-そのため、
+を編集基準として使用します。
 
-「Controllerの位置は正しいが、Shapeだけ少し外側へ出したい」
+リグでは、コントローラーのTransform原点と  
+カーブシェイプの中心が一致しているとは限りません。
 
-といった場合にも、リグ上の基準位置を変更せず、見た目だけを調整できます。
+TransformのPivotを基準に拡大縮小 / 回転すると、  
+シェイプの大きさや向きだけを変更したい場合でも  
+表示位置までずれてしまうことがあります。
 
----
+そこで、コントローラーごとにカーブシェイプの中心を取得し、
 
-## Shape-Centered Transform
-
-Scale / Rotateでは、Controller TransformのPivotではなく、**実際に表示されているCurve Shapeの中心**を編集基準として使用します。
-
-リグでは、Controller Transformの原点とCurve Shapeの中心が一致しているとは限りません。
-
-その状態でTransformのPivotを基準にScale / Rotateすると、Shapeの大きさや向きだけを変更したい場合でも、表示位置までずれてしまうことがあります。
-
-そこで本ツールではControllerごとにCurve Shapeの中心を取得し、
-
-**TransformやPivotを変更せず、見えているShapeをその場で編集**
+**TransformやPivotを変更せず、  
+見えているシェイプをその場で編集**
 
 できるようにしています。
 
-複数Controllerを選択した場合も、選択全体の中心ではなく、それぞれのControllerを独立して処理します。
+複数のコントローラーを選択した場合も、  
+選択全体の中心ではなく、それぞれのコントローラーを独立して処理します。
 
 ---
 
-## Fine Adjustment
+# 2つの編集方法
 
-各Transform項目には、**数値フィールドとSliderの両方**を用意しています。
+コントローラーシェイプの編集には、
 
-SliderではViewportを見ながら感覚的に調整し、数値フィールドでは正確な値や細かな差を調整できます。
+- **リアルタイムプレビュー**
+- **直接編集モード**
 
-さらに数値フィールドでは、カーソルが置かれている桁に応じて増減量が変化します。
+の2つの方法があります。
 
-* 整数部分では大きく調整
-* 小数部分では細かく調整
+数値による正確な調整と、  
+Maya上でシェイプを見ながら行う直感的な調整を、  
+用途に応じて使い分け・併用できます。
 
-といった操作ができるため、
-
-**Sliderで粗調整 → 数値フィールドで微調整**
-
-という流れを、Step設定を切り替えることなく行えます。
-
----
-
-## Reset
-
-Uniform Scale / Scale / Rotate / Moveなどの各Sectionには、個別のResetを用意しています。
-
-例えば、
-
-「Scaleは残してRotateだけやり直したい」
-「ScaleXは残してScaleYZだけやり直したい」 
-
-という場合でも、他の調整内容を維持したまま対象Sectionだけを戻せます。
-
-さらに、**Reset All Values**からすべての調整値をまとめてResetできます。
-個別の際は右クリックからリセットが可能です。
-
-
+```text
+                  シェイプ編集
+                       │
+                       ▼
+               コントローラーを選択
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+             ▼                   ▼
+  リアルタイムプレビュー      直接編集モード
+       数値で調整              直接操作
+             │                   │
+             ▼                   ▼
+       確認して適用          Maya上で即時反映
+             │                   │
+             └─────────┬─────────┘
+                       ▼
+              コントローラーシェイプ
+```
 
 ---
 
-## Line Width
+## リアルタイムプレビュー
 
-Curve ShapeのLine Widthを調整できます。
+![リアルタイムプレビュー](docs/gifs/real-time-preview.gif)
 
-Controllerの形や色だけではなく、線の太さも同じUIから変更できるため、Viewport上での視認性に合わせて調整できます。
-
----
-
-## Joint Size
-
-選択Jointの表示サイズを調整できます。
-
-Controller Shapeの編集だけでなく、リグ構築中に頻繁に行うJointの視認性調整も同じUIへまとめています。
-
----
-
-# Real Time Preview
-
-Real Time Previewを有効にすると、数値やSliderを変更した結果をViewportへリアルタイムに反映します。
+リアルタイムプレビューを有効にすると、  
+数値やスライダーを変更した結果を  
+ビューポートへリアルタイムに反映します。
 
 通常であれば、
 
-`値を変更 → Apply → 確認 → Undo → 再調整`
+```text
+値を変更
+   ↓
+適用
+   ↓
+確認
+   ↓
+Undo
+   ↓
+再調整
+```
 
 となる操作を、
 
-`値を変更 → 確認 → 微調整 → Apply`
+```text
+値を変更
+   ↓
+その場で確認
+   ↓
+微調整
+   ↓
+適用
+```
 
 という流れで行えます。
 
-Preview中は編集前のShape情報を保持しており、Applyするまでは確定しません。
+プレビュー中は編集前のシェイプ情報を保持しており、  
+適用するまでは変更を確定しません。
 
-PreviewをOFFにした場合やWindowを閉じた場合、別の編集へ移った場合には、未確定の変更を元の状態へRollbackします。
+プレビューをOFFにした場合や、  
+ウィンドウを閉じた場合、別の編集へ移った場合には、  
+未確定の変更を元の状態へ戻します。
 
-そのため、
+**気軽に数値を動かして比較し、  
+良い結果だけを確定できること**
 
-**気軽に数値を動かして比較し、良い結果だけを確定する**
-
-ことができます。
-
----
-
-# Color Editing
-
-<img src="docs/images/color-editing.png" alt="Controller Shape Color dialog" width="500">
-
-Controller Colorも、Shape Transformと同じツール内から編集できます。
-
-色変更は単純なColor Pickerだけではなく、**感覚的な色選びから正確な数値指定まで、複数の方法で調整できること**を重視しています。
-
-メインWindowには、現在選択しているControllerの色を**Current Colors**として表示します。
-
-**Pick Color**から専用のColor Dialogを開き、より詳細な調整を行えます。
+を重視しています。
 
 ---
 
-## Multiple Color Inputs
+## 直接編集モード
 
-色は用途に合わせて、複数の方法から指定できます。
+![直接編集モード](docs/gifs/direct-edit.gif)
 
-**Color Picker**
-色相・彩度・明度を視覚的に確認しながら選択できます。
+実際のリグ制作でツールを使用する中で、  
+数値入力と適用を繰り返すだけでなく、
 
-**Hue / Saturation / Value**
-HSV値を使用して色を調整できます。
+**Mayaと同じ感覚で直接編集できる方が効率的**
 
-**RGB**
-Red / Green / Blueを数値で直接指定できます。
+だと感じたため追加しました。
 
-**HTML / HEX**
-HEX形式で正確な色を入力できます。
+直接編集モードでは、  
+Maya上でコントローラーシェイプを直接操作し、  
+変更をそのまま即時反映できます。
 
-**Screen Color Pick**
-画面上に表示されている色を直接取得できます。
+適用操作を必要としないため、  
+ひとつのコントローラーを調整したあと、  
+そのまま別のコントローラーを選択して連続して編集できます。
 
-感覚的に色を探したい場合と、決まった値を正確に使用したい場合の両方に対応しています。
+細かなシェイプ調整や、  
+複数のコントローラーをまとめて整える作業を想定しています。
 
----
-
-## Default Colors
-
-あらかじめ複数の基本色を用意しています。
-
-Controller Colorとして使用したい色へ素早くアクセスできるため、毎回Color Pickerから色を作る必要がありません。
-
-同じ色を繰り返し使用したい場合にも、ワンクリックで選択できます。
+リアルタイムプレビューとの併用、  
+Maya標準のUndoにも対応しています。
 
 ---
 
-## Custom Colors
+# 微調整
 
-頻繁に使用する色は、**Custom Colorsとして登録**できます。
+各変形項目には、  
+**数値入力とスライダーの両方**を用意しています。
+
+スライダーではビューポートを見ながら感覚的に調整し、  
+数値入力では正確な値や細かな差を調整できます。
+
+さらに数値入力では、  
+カーソルが置かれている桁に応じて増減量が変化します。
+
+```text
+スライダーで大まかに調整
+        ↓
+数値入力で微調整
+```
+
+という流れを、  
+刻み幅の設定を切り替えることなく行えます。
+
+各項目は個別にリセットできるため、
+
+> スケールは残して、回転だけやり直したい
+
+といった場合でも、  
+他の調整内容を維持したまま対象項目だけを戻せます。
+
+---
+
+# カラー編集
+
+![カラー編集](docs/gifs/color-editing.gif)
+
+シェイプだけでなく、  
+**コントローラーの色も同じツールから調整**できます。
+
+用途に合わせて、
+
+- カラーピッカー
+- HSV
+- RGB
+- HEX
+- 既定色
+- カスタムカラー
+- 画面から色を取得
+
+など、複数の方法から色を指定できます。
+
+感覚的に色を探したい場合と、  
+決まった値を正確に使用したい場合の両方に対応しています。
+
+---
+
+## カラーパレット
+
+![カラー編集](docs/images/color-editing.png)
+
+あらかじめ用意した既定色に加えて、  
+頻繁に使用する色を**カスタムカラーとして登録**できます。
 
 例えば、
 
-* Left / Right用の色
-* Center Controller用の色
-* IK / FK用の色
-* キャラクター固有のController Color
+- 左 / 右
+- 中央コントローラー
+- IK / FK
+- キャラクター固有のコントローラーカラー
 
-などを登録しておけば、毎回数値を入力し直す必要がありません。
+などを登録しておけば、  
+毎回数値を入力し直す必要がありません。
 
-既定色だけではなく、**自分やプロジェクトに合わせたColor Paletteを作れること**を意識しています。
-
----
-
-## Current Colors
-
-現在選択しているControllerが使用している色を一覧表示します。
-
-複数Controllerを選択した場合も、それぞれの現在色を確認できます。
-
-表示されている色をそのまま利用できるため、
-
-**既存Controllerと同じ色へ素早く合わせる**
-
-ことができます。
-
-RGB値を確認して入力し直す必要はありません。
+また、現在選択しているコントローラーの色を一覧表示し、  
+その色をそのまま別のコントローラーへ使用できます。
 
 ---
 
-## Color Preview
+## カラープレビュー
 
-Color Dialogで色を変更すると、選択中ControllerへリアルタイムにPreviewします。
+カラーダイアログで色を変更すると、  
+選択中のコントローラーへリアルタイムにプレビューします。
 
-そのため、
+```text
+色を選ぶ
+   ↓
+Maya上で確認
+   ↓
+別角度から確認
+   ↓
+微調整
+   ↓
+確定
+```
 
-`色を設定 → Dialogを閉じる → Viewportで確認 → Dialogを開き直す`
+適用するまでは編集前のカラー状態を保持しているため、  
+試した色が合わなければキャンセルで元の状態へ戻せます。
 
-という往復を行う必要がありません。
+カラーダイアログは非モーダルで設計しているため、  
+ダイアログを開いたまま、
 
-キャラクター全体や他のControllerとの関係を見ながら、その場で色を比較できます。
-
-Applyするまでは編集前のOverride状態を保持しているため、試した色が合わなければCancelで元の状態へ戻せます。
-
----
-
-## Maya Interaction During Color Editing
-
-Color Dialogは**非Modal**で設計しています。
-
-Dialogを開いている間も、
-
-* Viewportを回転する
-* Controllerを別角度から確認する
-* Outlinerを操作する
-* Scene全体との色のバランスを見る
+- ビューポートを回転
+- コントローラーを別角度から確認
+- Outlinerを操作
+- シーン全体との色のバランスを確認
 
 といったMaya側の操作を続けられます。
 
-Controller ColorはColor Picker単体を見て決めるのではなく、**実際のMaya Viewport上でどう見えるか**が重要です。
-
-そのため、
-
-**色を選ぶ → Maya上で確認する → Viewportを動かす → 色を微調整する**
-
-という一連の操作を、Color Dialogを閉じずに行えるようにしています。
+**実際のMayaビューポート上での見え方を確認しながら  
+色を決められること**を重視しています。
 
 ---
 
-## Maya Viewportとの色味
+# シェイプライブラリ
 
-Color Dialog内の見え方だけではなく、**実際にMaya上へ表示されたControllerの色を確認しながら調整できること**を重視しています。
+![シェイプライブラリ](docs/gifs/shape-library.gif)
 
-Color Picker、HSV、RGB、HEX、Previewなど複数の入力方法を組み合わせることで、
+別途制作した **Controller Shape Library** を、  
+本ツールから直接呼び出して使用できます。
 
-**「数値として正しい色」ではなく「Viewport上で意図した見え方になる色」**
+登録されたシェイプを視覚的に選択して  
+コントローラーを作成できます。
 
-を探しやすい設計にしています。
+![Controller Shape Library](docs/images/shape-library.png)
+
+Controller Shape Libraryでは、
+
+- 登録済みシェイプからのコントローラー作成
+- テキストコントローラー
+- シェイプ結合
+- カラー設定
+- 位置 / 回転スナップ
+- ZERO / OFFSETグループ作成
+- ライブラリ登録
+
+などを行えます。
+
+Controller Shape Libraryは単体でも使用でき、
+
+**独立したツールの機能を、  
+別のツールから再利用できる構成**
+
+にしています。
+
+詳細はこちら  
+https://github.com/Yuzuki-Midoshima/Controller-Shape-Library
 
 ---
 
-# Copy / Paste Shape
+# シェイプのコピー / ペースト
 
-**Copy Rig / Paste Rigは、本ツールで特に重視している機能のひとつです。**
+![シェイプのコピー / ペースト](docs/gifs/copy-paste-shape.gif)
 
-完成済みリグのControllerについて、**既存リグへの影響を考慮しながら、見た目のCurve Shapeを別のControllerのShapeへ変更**できます。
+**Copy Rig / Paste Rig**は、  
+本ツールで特に重視している機能のひとつです。
 
-この機能では、一般的な「コピー元 → コピー先」というCopy / Pasteとは少し異なり、最初に**基準とする既存リグController**を`Copy Rig`で記録します。
+完成済みリグのコントローラーについて、
 
-その後、新しい見た目として使用したいControllerを選択して`Paste Rig`を実行すると、選択したModeに応じてController Shapeが再構築されます。
+**既存リグへの影響を考慮しながら、  
+見た目のカーブシェイプを別のシェイプへ変更**
+
+できます。
+
+一般的な「コピー元 → コピー先」というコピー / ペーストとは異なり、  
+最初に基準とする既存リグのコントローラーを  
+`Copy Rig`で記録します。
+
+その後、新しい見た目として使用したいコントローラーを選択して  
+`Paste Rig`を実行します。
 
 ```text
-Existing Rig Controller
+既存リグのコントローラー
         │
         │ Copy Rig
         ▼
-   Record Target
+     対象を記録
         │
         │
-New Shape Controller
+新しいシェイプのコントローラー
         │
         │ Paste Rig
         ▼
-Rebuild According to Mode
+選択した方法に応じて再構築
 ```
 
-Replaceでは記録した既存ControllerのShapeを置き換え、Addでは新しいControllerを構築して対応可能なTransform接続を移行します。
+用途に応じて、  
+**Replace** と **Add** の2つの方法を使用できます。
 
 ---
 
 ## Replace
 
-`Paste Mode: Replace`では、`Copy Rig`で記録した既存リグControllerのShapeを、`Paste Rig`実行時に選択しているControllerのShapeへ置き換えます。
+![Replace](docs/gifs/replace.gif)
+
+`Paste Mode: Replace`では、  
+`Copy Rig`で記録した既存リグのコントローラーシェイプを、  
+`Paste Rig`実行時に選択しているシェイプへ置き換えます。
 
 ```text
-Existing Rig Controller
-Transform / Rig Role / Transform Connections
+既存リグのコントローラー
+Transform / リグ上の役割 / 接続
               +
               │
-              │ Shape Replace
+              │ シェイプのみ置換
               ▼
-Shape from Selected Controller
+      新しいシェイプ
 ```
 
-置き換える中心はCurve Shapeであり、記録したControllerのリグ上の役割を維持したまま見た目を変更することを目的としています。
+記録したコントローラーのリグ上の役割を維持したまま、  
+見た目を変更することを目的としています。
 
-そのため、
+Translate / Rotate / Scale / Pivotなど、  
+既存コントローラーが持つTransformを不用意に変更せず、  
+シェイプを変更できます。
 
-* Translate
-* Rotate
-* Scale
-* Pivot
-
-など、既存Controllerが持つTransformを不用意に変更せずにShapeを変更できます。
-
-「このControllerの動作や配置はそのまま維持して、操作しやすい別のShapeへ変更したい」
+> 「このコントローラーの動作や配置はそのまま維持して、  
+> 操作しやすい別のシェイプへ変更したい」
 
 といった場合に使用できます。
-
-Shape提供側として選択したControllerは、移植処理後、安全に削除可能な場合は整理されます。
 
 ---
 
 ## Add
 
-`Paste Mode: Add`では、`Copy Rig`で記録した既存リグControllerをもとに新しいControllerを構築し、`Paste Rig`実行時に選択しているControllerのShapeを使用して再構成します。
+![Add](docs/gifs/add.gif)
 
-この処理では、複製時に生成された既存Shapeをそのまま残すのではなく、新しい見た目として使用するShapeへ置き換えたうえで、元のControllerから対応可能なTransform接続を新しいControllerへ移行します。
+`Paste Mode: Add`では、  
+`Copy Rig`で記録した既存リグのコントローラーをもとに  
+新しいコントローラーを構築します。
 
-Replaceが**記録した既存Controllerを維持したままShapeを置き換える処理**なのに対して、Addは**新しいControllerを構築し、対応可能なTransform接続を移行する処理**です。
-
-同じShape変更でも内部の処理方法が異なるため、用途に応じてReplace / Addを選択できます。
-
----
-
-## Preserve Curve Definition
-
-Copy / Pasteでは、CV位置だけではなく、Curve Shapeを再構築するために必要な情報を取得します。
-
-主に、
-
-* CV
-* Degree
-* Knot
-* Form
-* Rational
-
-などのCurve定義を使用してShapeを再構築します。
-
-これにより、単純なCurveだけでなく、Periodic CurveやRational Curveも考慮したShape移植を行います。
-
-Display SettingsはCurve定義とは別に扱います。
-
-記録した既存ControllerのShapeから必要なDisplay設定を取得し、生成するShapeへ適用することで、Controllerとしての表示状態を可能な範囲で引き継ぎます。
-
----
-
-## Preserve Rig Information
-
-完成済みControllerでは、Shapeだけでなく、TransformやConnectionなど、リグ上の役割に関わる情報を持っている場合があります。
-
-Copy / Pasteでは、単にCurve Shapeを複製するだけではなく、**記録したControllerがリグの中で担っている役割を考慮しながら、見た目を変更すること**を重視しています。
-
-Replaceでは、記録した既存Controllerを維持したままShapeを置き換えます。
-
-Addでは、新しいControllerを構築してShapeを再作成し、元のControllerから対応可能なTransform接続を移行します。
-
-処理方法は異なりますが、どちらもControllerの見た目を変更する際に、既存リグへの影響を抑えることを目的としています。
-
-リガーがController Shapeを整理・変更する用途だけでなく、アニメーターが既存リグを自分にとって扱いやすいShapeへ変更する用途も想定しています。
-
----
-
-## Why Shape Copy / Paste?
-
-Shape Copy / Pasteは、このツール全体の設計方針を特に強く反映した機能です。
-
-リガーがController Shapeを統一したい場合だけでなく、アニメーターが、
-
-「このControllerはもう少し選択しやすい形にしたい」
-
-「同じ役割のControllerとShapeを揃えたい」
-
-「操作しづらいので、別のShapeへ変更したい」
-
-と感じる場面でも使用できます。
-
-通常であればShape Node、Transform、Pivot、Connectionなどを確認しながら行う必要がある操作を、
-
-**基準とするRigを記録 → 新しいShapeを選択 → Modeに応じて再構築**
-
-という分かりやすい操作へまとめています。
-
-Shapeそのものをコピーする操作ではなく、**既存リグへの影響を考慮しながらControllerの見た目を変更するためのワークフロー**として設計しています。
-
----
-
-# Disconnect
-
-**Disconnect All Nodes**では、選択Controllerに対する接続解除をまとめて実行します。
-
-ControllerおよびCurve Shapeの接続を整理し、必要なAttribute状態やParent状態も処理します。
-
-処理全体はひとつのUndo Chunkとして実行されるため、Maya Undoで操作前の状態へ戻すことができます。
-
----
-
-# Workflow
-
-基本的なShape調整は、Controllerを選択した状態から行えます。
-
-1. 調整したいControllerを選択
-2. Scale / Rotate / Moveなどを調整
-3. Real Time Previewで結果を確認
-4. 必要に応じてColor / Line Widthなどを調整
-5. Applyして確定
-
-結果が合わなければ、ResetやRollbackによって編集前の状態へ戻せます。
-
-基本となるのは、
-
-**選択 → 調整 → 確認 → 確定**
-
-というシンプルな流れです。
-
-Shapeを別のControllerから移植する場合は、
-
-1. **基準とする既存リグController**を選択
-2. `Copy Rig`で記録
-3. `Replace / Add`を選択
-4. **新しい見た目として使用したいController**を選択
-5. `Paste Rig`を実行
-6. 選択したModeに応じてController Shapeを再構築
-
-という流れで操作します。
+新しい見た目として使用するシェイプへ置き換えたうえで、  
+元のコントローラーから対応可能なTransform接続を  
+新しいコントローラーへ移行します。
 
 ```text
-Select Existing Rig
+Replace
+既存コントローラーを維持
         ↓
-     Copy Rig
+シェイプを置換
+
+
+Add
+新しいコントローラーを構築
         ↓
-Choose Replace / Add
-        ↓
- Select New Shape
-        ↓
-     Paste Rig
-        ↓
-Rebuild Controller Shape
+対応可能な接続を移行
 ```
 
-`Replace`では記録した既存ControllerのShapeを置き換え、`Add`では新しいControllerを構築して対応可能なTransform接続を移行します。
-
-一般的なCopy / PasteとはShapeの移動方向が異なるため、**`Copy Rig`では新しいShapeではなく、基準とする既存リグControllerを先に記録すること**が操作上のポイントです。
+同じシェイプ変更でも内部の処理方法が異なるため、  
+用途に応じてReplace / Addを選択できます。
 
 ---
 
-# Design
+## カーブ情報の保持
 
-## Rigger & Animator Friendly
+コピー / ペーストでは、  
+CV位置だけではなく、カーブシェイプを再構築するために必要な
 
-本ツールは、**リガーとアニメーターの両方が扱えること**を前提に設計しています。
+- CV
+- Degree
+- Knot
+- Form
+- Rational
 
-リガーには、Controller制作・調整を効率化するための細かな編集機能を。
+などのカーブ情報を取得します。
 
-アニメーターには、Component ModeやShape Nodeなどのリグ内部を直接操作せず、Controllerを自分が扱いやすい状態へ調整できる環境を。
+これにより単純なカーブだけでなく、  
+Periodic CurveやRational Curveも考慮して  
+シェイプを再構築します。
 
-専門的な処理はツール側で行い、ユーザー側の操作はできるだけ、
+表示設定はカーブ情報とは別に取得し、  
+生成するシェイプへ可能な範囲で引き継ぎます。
 
-**選択して、見ながら調整する**
+---
+
+# 接続解除
+
+![接続解除](docs/gifs/disconnect.gif)
+
+**Disconnect All Nodes**では、  
+選択したコントローラーに対する接続解除をまとめて実行します。
+
+コントローラーおよびカーブシェイプの接続を整理し、  
+必要なアトリビュート状態や親子関係も処理します。
+
+処理全体はひとつのUndoとして実行されるため、  
+MayaのUndoで操作前の状態へ戻すことができます。
+
+---
+
+# 制作・改善
+
+このツールは、リグ制作で頻繁に行う  
+**コントローラーシェイプの調整を効率化するツール**として制作を始めました。
+
+当初は、
+
+```text
+拡大縮小
+   +
+回転 / 移動
+   +
+線幅
+   +
+シェイプのコピー / ペースト
+```
+
+など、繰り返し行う調整作業を  
+ひとつのツールから行えるようにしていました。
+
+その後、実際のリグ制作で使用しながら、  
+操作性や制作の流れに合わせて機能を追加・調整しています。
+
+---
+
+## カラー編集の追加
+
+シェイプの形だけでなく、
+
+**「色も同じ場所から調整したい」**
+
+という制作の流れからカラー編集を追加しました。
+
+カラーピッカーだけではなく、  
+HSV / RGB / HEX / 既定色 / カスタムカラーなど、  
+用途によって入力方法を選択できます。
+
+また、実際のリグ上で色を比較できるよう  
+リアルタイムプレビューとロールバックにも対応しています。
+
+---
+
+## シェイプライブラリの追加
+
+コントローラーを調整するだけでなく、  
+新しいシェイプの作成まで同じ流れで行えるよう、
+
+別途制作した **Controller Shape Library** を組み込みました。
+
+```text
+シェイプを選ぶ
+      ↓
+コントローラーを作成
+      ↓
+大きさ / 向きを調整
+      ↓
+カラーを調整
+      ↓
+既存リグへ使用
+```
+
+といった一連の作業を、  
+ツールを行き来せず行えるようにしています。
+
+---
+
+## 直接編集モードの追加
+
+数値入力とスライダーによる編集を使用する中で、
+
+**細かな調整では、Maya上で直接触った方が速い**
+
+と感じる場面がありました。
+
+そこで、従来のリアルタイムプレビューに加えて  
+直接編集モードを追加しました。
+
+```text
+正確に調整したい
+      ↓
+数値 / スライダー
+
+
+感覚的に調整したい
+      ↓
+直接編集
+```
+
+どちらか一方へ統一するのではなく、  
+作業内容によって使い分けられるようにしています。
+
+---
+
+# リガー / アニメーター双方を意識した設計
+
+本ツールは、
+
+**リガーとアニメーターの両方が扱えること**
+
+を前提に設計しています。
+
+リガーには、  
+コントローラー制作・調整を効率化するための細かな編集機能を。
+
+アニメーターには、  
+コンポーネントモードやShape Nodeなどの  
+リグ内部を直接操作せず、
+
+**自分が扱いやすいコントローラーへ調整できる環境**
+
+を提供することを目指しています。
+
+専門的な処理はツール側で行い、  
+ユーザー側の操作はできるだけ、
+
+**「選択して、見ながら調整する」**
 
 という形にまとめています。
 
 ---
 
-## Non-Destructive Editing
+# 安全性
 
-Transform値やPivot、既存のリグ構造を不用意に変更せず、可能な限りCurve Shape側を操作します。
+操作の速さと同じくらい、
 
-PreviewやColor EditについてもApply前の状態を保持し、CancelやWindow Close時には元の状態へ戻せるようにしています。
+**意図しない変更を防ぎ、  
+失敗した場合に安全に戻れること**
 
----
+を重視しています。
 
-## Predictable Behavior
+主に、
 
-操作結果をユーザーが予測しやすいことも重視しています。
+- Transform / Pivotを不用意に変更しない
+- プレビューは適用前なら元の状態へ戻せる
+- 直接編集は即時反映 + Undo対応
+- 項目単位でリセット可能
+- 複数のコントローラーを独立して処理
+- カラー変更はキャンセルで復元
+- 選択状態を可能な限り復元
+- コピー / ペースト失敗時のロールバック
+- ウィンドウを閉じた際の未確定編集の復元
 
-* Applyした変更は確定する
-* ApplyしていないPreviewは戻せる
-* Resetした項目だけを戻せる
-* 複数選択でも各Controllerを独立して処理する
-* CancelしたColor変更は元へ戻る
-* Tool内部で変更したSelectionは可能な限り復元する
+などの処理を行っています。
 
-細かな操作でも、意図しないScene変更が起きにくい挙動を目指しています。
+コピー / ペーストや接続解除など、  
+リグ構造への影響が大きい処理では、  
+不正な状態を操作前に確認します。
 
----
-
-## Interaction Design
-
-本ツールでは、機能数そのものよりも、**何度も繰り返し使ったときの操作感**を重視しています。
-
-例えば、
-
-* Controllerを選択した状態からそのまま編集できる
-* Sliderで大きく調整できる
-* 数値フィールドで細かく詰められる
-* カーソル位置の桁によって増減量を変えられる
-* 90°回転をワンクリックで実行できる
-* SectionごとにResetできる
-* Previewで結果を確認してから確定できる
-* Color Dialogを開いたままMayaを操作できる
-* Current Colorsから既存色を再利用できる
-* Copy / Pasteで既存リグの役割を考慮しながらShapeを変更できる
-* 複数Controllerをまとめて調整できる
-
-といった、小さな挙動を積み重ねています。
+エラーを単純に無視するのではなく、  
+ユーザー側で修正できる問題は警告として通知し、  
+予期しない問題と分けて扱います。
 
 ---
 
-# Validation / Safety
+## Undo / ロールバック
 
-Shape編集ツールでは、操作の速さと同じくらい、**「失敗したときに安全に戻れること」**を重視しています。
+通常の編集操作は、  
+MayaのUndo単位でまとめています。
 
-## Undo / Redo
+ひとつのツール操作によって  
+Undo履歴が細かく分割されないようにしています。
 
-通常の編集操作はMayaのUndo Chunk単位でまとめています。
+リアルタイムプレビューやカラープレビューなど、  
+複数の操作にまたがる編集では開始時の状態を記録し、
 
-ひとつのツール操作によってUndo履歴が細かく分割されないようにしています。
+- 適用
+- キャンセル
+- プレビューOFF
+- ウィンドウを閉じる
+- 別編集の開始
+- 処理中の例外
 
----
-
-## Rollback
-
-Real Time PreviewやColor Previewのように複数のユーザー操作にまたがる処理では、編集開始時の状態をCaptureします。
-
-以下の状態に応じてCommitまたはRollbackします。
-
-* Apply
-* Cancel
-* Preview OFF
-* Window Close
-* 別編集の開始
-* 処理中の例外
-
-途中で例外が発生した場合も、Undo Chunkを閉じ忘れないよう管理しています。
+などの状態に応じて、  
+確定またはロールバックします。
 
 ---
 
-## Selection Preservation
+## 選択状態の保持
 
-Copy / Pasteなど内部でSelectionを変更する可能性がある処理では、操作前のSelectionを保存し、処理終了後に可能な限り復元します。
+コピー / ペーストなど、  
+内部で選択状態を変更する処理では、
+
+操作前の選択状態を保存し、  
+処理終了後に可能な範囲で復元します。
 
 ツールを使用したことで、
 
-「今どのControllerを触っていたのか分からなくなる」
+> 「今どのコントローラーを触っていたのか分からなくなる」
 
-状態を避け、連続した作業を妨げないようにしています。
-
----
-
-## Multiple Controller Support
-
-複数Controllerを選択した状態での編集に対応しています。
-
-Scale / Rotateでは、選択全体をひとつのShapeとして処理するのではなく、**Controllerごとに独立したShape中心を使用**します。
-
-これにより、左右のControllerなどをまとめて選択しても、それぞれがその場で拡縮・回転します。
+状態を避け、  
+連続した作業を妨げないようにしています。
 
 ---
 
-## Safeguards
+# 設計構造
 
-実制作リグへの使用を想定し、破壊的な操作には複数の保護を設けています。
-
-* Copy / PasteおよびDisconnectでReferenced Controllerへの対象操作を拒否
-* 不正なSelectionを操作前に検出
-* Copy Buffer消失を検出
-* Preview / Color Sessionの二重開始を防止
-* Copy / Paste失敗時のRollback
-* Undo Chunkの確実な終了
-* Window Close時の未確定編集Rollback
-* Selection復元
-
-エラーを単純に握り潰すのではなく、ユーザーが修正可能な問題はWarningとして通知し、予期しない問題と分離しています。
-
----
-
-# Architecture
-
-ツール内部は、UIとMaya操作を直接結びつけず、責務ごとに分離しています。
+ツール内部は、  
+画面とMaya操作を直接結びつけず、  
+役割ごとに処理を分離しています。
 
 ```text
-UI
+画面
  ↓
-Feature / Use Case
+機能
  ↓
-Service
+サービス
  ↓
 Maya API
 ```
 
-### UI
+### 画面
 
-Widget、Layout、Signalなど画面表示を担当します。
+画面表示、入力、シグナルなどを担当します。  
+Mayaシーンの具体的な編集処理は行いません。
 
-Maya Sceneの具体的な編集処理は行いません。
+### 機能
 
-### Feature
+変形、プレビュー、直接編集、カラー、  
+コピー / ペースト、接続解除など、  
+ユーザー操作単位の処理を担当します。
 
-Transform、Preview、Color、Copy / Paste、Disconnectなど、ユーザー操作単位の処理を担当します。
+### サービス
 
-選択条件、処理順序、Undo、Sessionなどを管理します。
+各機能が必要とする操作をMaya APIへ橋渡しします。
 
-### Service
+カーブシェイプの取得、選択状態、Undoなど、  
+Maya固有の処理をこの層へまとめています。
 
-Featureが必要とする操作をMaya APIへ橋渡しします。
+### コア
 
-DAG Path、Curve Shape Query、Selection、Undoなど、Maya固有の処理をこの層へ集約しています。
+Maya / Qtに依存しない状態管理、  
+Transform計算、編集状態の管理などを担当します。
 
-### Core
-
-Maya / Qtに依存しないDomain Model、State、Transform計算、Session Lifecycleを管理します。
-
-これにより、ツールの中心となるロジックをDCC環境から分離しています。
+これにより、  
+ツールの中心となる処理をDCC環境から分離しています。
 
 ---
 
-## Why This Architecture?
+## この構成にした理由
 
-個人制作のMaya Toolでは、すべての処理をひとつのPythonファイルへまとめることもできます。
+個人制作のMayaツールでは、  
+すべての処理をひとつのPythonファイルへまとめることもできます。
 
-本ツールでは、機能追加を続けた場合でも既存機能を壊しにくくするため、責務を分離しています。
+本ツールでは、  
+機能追加を続けた場合でも既存機能を壊しにくくするため、  
+役割ごとに処理を分離しています。
 
-一方で、抽象化そのものを目的にはしていません。
+一方で、複雑な構造にすること自体を目的にはしていません。
 
-DI Framework、Repository階層、Event Busなどは導入せず、必要なServiceをComposition Rootで明示的に組み立てています。
-
-**小規模ツールとして追いやすい構造を保ちながら、変更に耐えられる設計にすること**
+**小規模ツールとして追いやすい構造を保ちながら、  
+変更に耐えられる設計にすること**
 
 を方針としています。
 
 ---
 
-# Testing
+# テスト
 
-Pure Python Test、Maya Integration Test、UI Regression Testを用意しています。
+機能追加や調整を繰り返しても  
+既存機能を壊さないよう、自動テストを用意しています。
 
-主に以下を検証しています。
+主に、
 
-* Transform計算
-* Preview Commit / Rollback
-* Color Commit / Rollback
-* Undo / Redo
-* 複数Controller
-* Periodic / Rational Curve
-* Copy / Replace / Add
-* Connection移行
-* Disconnect
-* Namespace
-* Referenced Node
-* Locked Nodeでの失敗時Rollback
-* Selection復元
-* Window Lifecycle
-* UI Context Menu
+- Transform計算
+- プレビューの確定 / ロールバック
+- カラーの確定 / ロールバック
+- Undo / Redo
+- 複数コントローラー
+- Periodic / Rational Curve
+- Copy / Replace / Add
+- 接続の移行
+- 接続解除
+- Namespace
+- Referenced Node
+- Locked Nodeでの失敗時ロールバック
+- 選択状態の復元
+- ウィンドウのライフサイクル
+- 画面のコンテキストメニュー
 
-Maya GUI固有のViewport操作やDialogの実操作については、自動テストと区別し、Maya 2026 GUI上で手動確認する方針としています。
+などを確認しています。
 
----
-
-# Technical Details
-
-* Autodesk Maya 2026
-* Python 3
-* PySide6
-* Maya Python API
-* Maya Undo Chunk
-* Qt Signal / Widget
-
-## Technical Focus
-
-* Curve Shape中心を利用したTransform処理
-* Preview Sessionの状態管理
-* Color Override状態のCapture / Restore
-* Curve Shape定義のCapture / Reconstruction
-* Undo / Rollback管理
-* Selection Preservation
-* Periodic / Rational Curve対応
-* UIとMaya Scene処理の責務分離
+Maya GUI固有のビューポート操作や  
+ダイアログの実操作については自動テストと分け、  
+Maya 2026上で手動確認しています。
 
 ---
 
-# Requirements
+# 技術情報
 
-* Autodesk Maya 2026
-* Python 3
-* PySide6
+- Autodesk Maya 2026
+- Python 3
+- PySide6
+- Maya Python API
+- Maya Undo
+- Qt
+
+### 主な技術要素
+
+- カーブシェイプ中心を利用したTransform処理
+- リアルタイムプレビューの状態管理
+- 直接編集による即時シェイプ編集
+- カラー状態の記録 / 復元
+- カーブシェイプ情報の記録 / 再構築
+- Undo / ロールバック管理
+- 選択状態の保持
+- Periodic / Rational Curve対応
+- 画面とMayaシーン処理の分離
+
+---
+
+# 動作環境
+
+- Autodesk Maya 2026
+- Python 3
+- PySide6
 
 Maya 2026に同梱されているPython環境での使用を想定しています。
 
 ---
 
-# Installation
+# インストール
 
-RepositoryをMayaのscriptsディレクトリへ配置します。
+リポジトリをMayaの`scripts`フォルダへ配置します。
 
 ```text
 <Maya userAppDir>/scripts/Rig-Ctrl-Shape-Tool/
 ```
 
-## Launch
-
-通常起動には、Repository直下の`launch.py`を使用します。
-
-Maya Script EditorのPythonタブから起動する場合：
-
-```python
-import os
-import runpy
-import maya.cmds as cmds
-
-maya_dir = os.path.normpath(cmds.internalVar(userAppDir=True))
-
-launch_file = os.path.join(
-    maya_dir,
-    "scripts",
-    "Rig-Ctrl-Shape-Tool",
-    "launch.py",
-)
-runpy.run_path(launch_file, run_name="__main__")
-```
-
-`launch.py`がTool Packageの読み込みと起動を行います。
-
-`launch.py`は通常起動用のEntry Pointです。
-
-## Shelf
-
-上記のScript Editor用コードをPython Shelf Buttonへ登録することで、通常使用時はShelfから`launch.py`を実行できます。
-
-`dev_launch.py`は開発用のImport Entryとして配置しています。
-
----
-
-# Project Structure
+構成例：
 
 ```text
 Rig-Ctrl-Shape-Tool/
@@ -880,72 +857,76 @@ Rig-Ctrl-Shape-Tool/
 ├─ app.py
 │
 ├─ core/
-│  ├─ domain.py
-│  ├─ state.py
-│  ├─ sessions.py
-│  ├─ transform_math.py
-│  ├─ errors.py
-│  └─ constants.py
-│
 ├─ features/
-│  ├─ transform.py
-│  ├─ preview.py
-│  ├─ color.py
-│  ├─ copy_paste.py
-│  ├─ disconnect.py
-│  └─ controls.py
-│
 ├─ services/
-│
 ├─ maya/
-│  ├─ utils.py
-│  ├─ curve_io.py
-│  └─ connections.py
-│
 ├─ ui/
+├─ tests/
 │
-└─ tests/
+└─ docs/
+   ├─ images/
+   │  ├─ rig-controller-shape-tool.png
+   │  ├─ color-editing.png
+   │  └─ shape-library.png
+   │
+   └─ gifs/
+      ├─ shape-transform.gif
+      ├─ real-time-preview.gif
+      ├─ direct-edit.gif
+      ├─ color-editing.gif
+      ├─ shape-library.gif
+      ├─ copy-paste-shape.gif
+      ├─ replace.gif
+      ├─ add.gif
+      └─ disconnect.gif
 ```
 
 ---
 
-# Development Focus
+## 起動方法
 
-このツールでは、機能数を増やすことよりも、**リガーとアニメーターが制作中に何度も使いたくなる操作感**を重視しました。
+通常起動には、  
+リポジトリ直下の`launch.py`を使用します。
 
-リガーにしか使えない専門ツールにするのではなく、リグ内部の構造に詳しくないユーザーでも、
+MayaのスクリプトエディタのPythonタブから起動する場合：
 
-**選ぶ → 試す → 見る → 決める**
+```python
+import os
+import runpy
+import maya.cmds as cmds
 
-という分かりやすい流れでControllerを編集できることを目指しています。
+maya_dir = os.path.normpath(
+    cmds.internalVar(userAppDir=True)
+)
 
-そのために、
+launch_file = os.path.join(
+    maya_dir,
+    "scripts",
+    "Rig-Ctrl-Shape-Tool",
+    "launch.py",
+)
 
-* Controllerを選んですぐ編集できる
-* Sliderで大きく、数値で細かく調整できる
-* 編集結果をリアルタイムに確認できる
-* 90°回転をワンクリックで行える
-* SectionごとにResetできる
-* Colorを複数の方法から指定できる
-* よく使う色を登録して再利用できる
-* Current Colorsから既存Controllerと色を合わせられる
-* Color Dialogを開いたままMayaを操作できる
-* Copy / Pasteで既存リグの情報を考慮しながらControllerの見た目を変更できる
-* 複雑なCurve Shapeも可能な限り維持して移植できる
-* 複数Controllerでも自然に動作する
-* 操作をやめれば未確定の変更は元へ戻る
-* 失敗してもUndoできる
-* Tool操作後もSelectionをできるだけ維持する
+runpy.run_path(
+    launch_file,
+    run_name="__main__"
+)
+```
 
-といった、ひとつひとつは小さな挙動を積み重ねています。
-
-**「できるかどうか」だけではなく、「誰が、制作中に、どう使うのか」まで含めて設計すること**
-
-を、このツールの中心テーマとしています。
+`launch.py`がツールパッケージの読み込みと起動を行います。
 
 ---
 
-# License
+## シェルフへの登録
+
+上記のスクリプトエディタ用コードを  
+Pythonのシェルフボタンへ登録することで、  
+通常使用時はシェルフから起動できます。
+
+`dev_launch.py`は開発時の読み込み用として配置しています。
+
+---
+
+# ライセンス
 
 MIT License
 

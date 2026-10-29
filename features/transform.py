@@ -53,7 +53,7 @@ class TransformFeature:
         if group == "joint_size":
             joints = self._selection.joints()
             if not joints:
-                raise InvalidSelectionError("Select one or more joints")
+                raise InvalidSelectionError("1つ以上のジョイントを選択してください")
             with self._scene.undo_chunk("RigCtrlShapeApplyValue"):
                 for joint in joints:
                     current = self._scene.joint_size(joint)
@@ -62,10 +62,10 @@ class TransformFeature:
                             joint, current * self._state.values.joint_size
                         )
             self.applied()
-            self._scene.show_status("APPLIED")
+            self._scene.show_status("適用しました")
             return
         if not cvs:
-            raise InvalidSelectionError("Select a controller with a NURBS curve shape")
+            raise InvalidSelectionError("NURBSカーブシェイプを持つコントローラーを選択してください")
 
         isolated = isolated_transform_values(self._state.values, group, axis)
 
@@ -76,7 +76,7 @@ class TransformFeature:
             else:
                 self._transform_selection(isolated)
         self.applied()
-        self._scene.show_status("APPLIED")
+        self._scene.show_status("適用しました")
 
     def _apply_line_width(self, shapes: Sequence[str]) -> None:
         if not self._state.line_width_dirty:
@@ -107,12 +107,12 @@ class TransformFeature:
             self._state.line_width_dirty = False
             self._state.joint_size_dirty = False
             self.applied()
-            self._scene.show_status("APPLIED")
+            self._scene.show_status("適用しました")
             return
         cvs = self._selection.cvs()
         joints = self._selection.joints()
         if not cvs and not joints:
-            raise InvalidSelectionError("Select a controller or one or more joints")
+            raise InvalidSelectionError("コントローラーまたは1つ以上のジョイントを選択してください")
         with self._scene.undo_chunk("RigCtrlShapeApply"):
             if cvs:
                 self._transform_selection()
@@ -121,7 +121,7 @@ class TransformFeature:
         self._state.line_width_dirty = False
         self._state.joint_size_dirty = False
         self.applied()
-        self._scene.show_status("APPLIED")
+        self._scene.show_status("適用しました")
 
     def _rotate_90(self, axis: int) -> None:
         self.before_value_change()

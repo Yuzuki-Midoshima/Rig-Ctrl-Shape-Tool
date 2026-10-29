@@ -12,6 +12,7 @@ from .features import (
     ControlsFeature,
     CopyPasteFeature,
     DisconnectFeature,
+    DirectEditFeature,
     PreviewFeature,
     TransformFeature,
 )
@@ -61,6 +62,7 @@ def show() -> RigCtrlShapeWindow:
     controls = ControlsFeature(state)
     copy_paste = CopyPasteFeature(state, selection, curves, connection_service, scene)
     disconnect = DisconnectFeature(selection, connection_service, scene)
+    direct_edit = DirectEditFeature(selection, scene)
 
     transform.cancel_preview = preview.rollback
     transform.cancel_color = color.rollback
@@ -70,6 +72,9 @@ def show() -> RigCtrlShapeWindow:
     transform.before_value_change = controls.capture_preview_value
     preview.cancel_color = color.rollback
     controls.changed = preview.update_preview
+    direct_edit.cancel_color = color.rollback
+    direct_edit.cancel_preview = preview.rollback
+    direct_edit.rebase_values = controls.rebase_values
     def cancel_sessions() -> None:
         """Rollback edits while preserving the Preview checkbox preference."""
         color.rollback()
@@ -86,6 +91,7 @@ def show() -> RigCtrlShapeWindow:
         disconnect,
         controls,
         shape_library,
+        direct_edit,
         parent=parent,
     )
     color.colors_changed = window.handle_color_state_changed
@@ -130,6 +136,7 @@ def show() -> RigCtrlShapeWindow:
         state.window.event_jobs.clear()
         color.rollback()
         preview.rollback()
+        direct_edit.finish()
 
     window.closing.connect(close)
     window.refresh_colors()

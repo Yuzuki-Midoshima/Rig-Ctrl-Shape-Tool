@@ -28,6 +28,14 @@ class SelectionService:
     def controller_cvs(self, controller: str) -> list[str]:
         return maya_utils.shape_cvs(controller)
 
+    def shape_cvs(self, shape: str) -> list[str]:
+        """Return every CV belonging to one curve shape."""
+        return maya_utils.curve_shape_cvs(shape)
+
+    def selected_component_shapes(self) -> list[str]:
+        """Return curve shapes represented by the selected CV components."""
+        return maya_utils.selected_component_shapes()
+
     def joints(self) -> list[str]:
         """Return individually selected joint nodes."""
         return cmds.ls(selection=True, long=True, type="joint") or []

@@ -295,6 +295,16 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         self.assertTrue(cmds.getAttr(source_plug, keyable=True))
         self.assertFalse(cmds.getAttr(f"{restored}.translateX", keyable=True))
 
+    def test_disconnect_can_keep_current_controller_name(self) -> None:
+        controller = self._open_curve("keep_this_name")
+        cmds.select(controller, replace=True)
+        feature = DisconnectFeature(self.selection, self.connections, self.scene)
+
+        feature.disconnect_selected(rename_controller=False)
+
+        selected = cmds.ls(selection=True, long=False)[0]
+        self.assertEqual(selected, "keep_this_name")
+
     def test_color_session_rolls_back_and_committed_color_is_undoable(self) -> None:
         controller = self._open_curve("color_ctrl")
         shape = nurbs_curve_shapes(controller)[0]
@@ -400,6 +410,33 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         preview.rollback()
         for node, original in before.items():
             self.assertEqual(cmds.exactWorldBoundingBox(node), original)
+
+    def test_move_uses_world_axes_after_rotated_shape_is_committed(self) -> None:
+        controller = self._open_curve("world_move_ctrl")
+        cmds.rotate(0.0, 0.0, 45.0, controller, worldSpace=True)
+        cmds.select(controller, replace=True)
+        transform = TransformFeature(self.state, self.selection, self.scene)
+        preview = PreviewFeature(self.state, self.selection, self.scene)
+        transform.has_active_preview = lambda: preview.is_active
+        transform.commit_preview = preview.commit
+
+        # Commit a shape-only rotation, then let Preview recapture that result
+        # as the baseline for a subsequent move.
+        self.state.values.rotate = (0.0, 0.0, 30.0)
+        preview.begin()
+        transform.apply()
+        self.state.values.rotate = (0.0, 0.0, 0.0)
+        before = cmds.exactWorldBoundingBox(controller)
+
+        self.state.values.move = (2.0, 0.0, 0.0)
+        preview.update_preview()
+        after = cmds.exactWorldBoundingBox(controller)
+
+        self.assertAlmostEqual(after[0] - before[0], 2.0, places=5)
+        self.assertAlmostEqual(after[3] - before[3], 2.0, places=5)
+        self.assertAlmostEqual(after[1] - before[1], 0.0, places=5)
+        self.assertAlmostEqual(after[4] - before[4], 0.0, places=5)
+        preview.rollback()
 
     def test_joint_size_edits_selected_joints_individually_with_preview(self) -> None:
         first = cmds.createNode("joint", name="joint_size_first")

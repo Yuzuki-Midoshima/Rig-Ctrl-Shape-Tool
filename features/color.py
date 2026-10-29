@@ -31,7 +31,7 @@ class ColorFeature:
             return self.get_current_view_data()
         grouped = self._selection.grouped_shapes()
         if not grouped:
-            raise InvalidSelectionError("Select a controller with a NURBS curve shape")
+            raise InvalidSelectionError("NURBSカーブシェイプを持つコントローラーを選択してください")
         original = {
             shape: self._colors.capture(shape)
             for shapes in grouped.values()
@@ -59,7 +59,7 @@ class ColorFeature:
             state = saved.get(shapes[0]) or self._colors.capture(shapes[0])
             swatches.append(ColorSwatchData(controller, self._colors.display_color(state)))
         if not swatches:
-            raise InvalidSelectionError("Select a controller with a NURBS curve shape")
+            raise InvalidSelectionError("NURBSカーブシェイプを持つコントローラーを選択してください")
         return ColorViewData(swatches[0].color, tuple(swatches))
 
     def update_preview(self, color: ColorValue) -> None:

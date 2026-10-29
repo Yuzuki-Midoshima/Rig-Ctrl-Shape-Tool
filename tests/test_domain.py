@@ -8,6 +8,7 @@ from rig_ctrl_shape_tool.core.sessions import EditSessionLifecycle
 from rig_ctrl_shape_tool.core.state import ToolState
 from rig_ctrl_shape_tool.core.transform_math import isolated_transform_values
 from rig_ctrl_shape_tool.features.controls import ControlsFeature
+from rig_ctrl_shape_tool.features.direct_edit import DirectEditFeature
 from rig_ctrl_shape_tool.features.preview import PreviewFeature
 from rig_ctrl_shape_tool.features.transform import TransformFeature
 
@@ -43,6 +44,163 @@ class SessionTests(unittest.TestCase):
 
 
 class TransformLogicTests(unittest.TestCase):
+    def test_line_width_reset_uses_normal_visible_width(self) -> None:
+        state = ToolState()
+        controls = ControlsFeature(state)
+        controls.update("line_width", (3.0,))
+
+        controls.reset("line_width")
+
+        self.assertEqual(state.values.line_width, 1.0)
+        self.assertTrue(state.line_width_dirty)
+
+    def test_direct_edit_reselects_controller_and_rebases_values(self) -> None:
+        class Selection:
+            def controllers(self):
+                return ["ctrl"]
+
+            def controller_cvs(self, _controller):
+                return ["ctrlShape.cv[0]", "ctrlShape.cv[1]"]
+
+        class Scene:
+            def __init__(self):
+                self.entered = []
+                self.left = []
+
+            def enter_component_edit(self, cvs):
+                self.entered = list(cvs)
+
+            def leave_component_edit(self, controllers):
+                self.left = list(controllers)
+
+            def exists(self, _node):
+                return True
+
+        scene = Scene()
+        feature = DirectEditFeature(Selection(), scene)
+        events = []
+        feature.cancel_preview = lambda: events.append("preview")
+        feature.cancel_color = lambda: events.append("color")
+        feature.rebase_values = lambda: events.append("rebase")
+
+        feature.set_enabled(True)
+        self.assertTrue(feature.is_active)
+        self.assertEqual(scene.entered, ["ctrlShape.cv[0]", "ctrlShape.cv[1]"])
+        feature.set_enabled(False)
+
+        self.assertFalse(feature.is_active)
+        self.assertEqual(scene.left, ["ctrl"])
+        self.assertEqual(events, ["color", "preview", "rebase"])
+
+    def test_direct_edit_stays_active_and_follows_controller_selection(self) -> None:
+        class Selection:
+            current = ["first"]
+
+            def controllers(self):
+                return list(self.current)
+
+            def controller_cvs(self, controller):
+                return [f"{controller}Shape.cv[0]"]
+
+        class Scene:
+            def __init__(self):
+                self.selections = []
+
+            def enter_component_edit(self, cvs):
+                self.selections.append(list(cvs))
+
+            def leave_component_edit(self, _controllers):
+                return None
+
+            def exists(self, _node):
+                return True
+
+        selection = Selection()
+        scene = Scene()
+        feature = DirectEditFeature(selection, scene)
+        feature.begin()
+        selection.current = ["second"]
+
+        self.assertTrue(feature.retarget_selection())
+        self.assertTrue(feature.is_active)
+        self.assertEqual(
+            scene.selections,
+            [["firstShape.cv[0]"], ["secondShape.cv[0]"]],
+        )
+
+        selection.current = []
+        self.assertFalse(feature.retarget_selection())
+        self.assertTrue(feature.is_active)
+
+    def test_direct_edit_double_click_cycles_to_next_shape(self) -> None:
+        class Selection:
+            def controllers(self):
+                return ["ctrl"]
+
+            def controller_cvs(self, _controller):
+                return ["first.cv[0]", "second.cv[0]"]
+
+            def curve_shapes(self, _controller):
+                return ["first", "second"]
+
+            def selected_component_shapes(self):
+                return ["first"]
+
+            def shape_cvs(self, shape):
+                return [f"{shape}.cv[0]", f"{shape}.cv[1]"]
+
+        class Scene:
+            def __init__(self):
+                self.selections = []
+
+            def enter_component_edit(self, cvs):
+                self.selections.append(list(cvs))
+
+            def pointer_is_over_viewport(self):
+                return True
+
+        scene = Scene()
+        feature = DirectEditFeature(Selection(), scene)
+        feature.begin()
+
+        self.assertTrue(feature.select_next_shape())
+        self.assertEqual(scene.selections[-1], ["second.cv[0]", "second.cv[1]"])
+
+    def test_direct_edit_double_click_reselects_single_shape_after_deselect(self) -> None:
+        class Selection:
+            def controllers(self):
+                return ["ctrl"]
+
+            def controller_cvs(self, _controller):
+                return ["shape.cv[0]", "shape.cv[1]"]
+
+            def curve_shapes(self, _controller):
+                return ["shape"]
+
+            def selected_component_shapes(self):
+                return []
+
+            def shape_cvs(self, shape):
+                return [f"{shape}.cv[0]", f"{shape}.cv[1]"]
+
+        class Scene:
+            def __init__(self):
+                self.selections = []
+
+            def enter_component_edit(self, cvs):
+                self.selections.append(list(cvs))
+
+            def pointer_is_over_viewport(self):
+                return True
+
+        scene = Scene()
+        feature = DirectEditFeature(Selection(), scene)
+        feature.begin()
+        scene.selections.clear()
+
+        self.assertTrue(feature.select_next_shape())
+        self.assertEqual(scene.selections, [["shape.cv[0]", "shape.cv[1]"]])
+
     def test_preview_stays_enabled_after_commit(self) -> None:
         state = ToolState()
         preview = PreviewFeature(state, object(), object())

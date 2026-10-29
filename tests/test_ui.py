@@ -11,6 +11,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from rig_ctrl_shape_tool.app import _find_existing_window
+from rig_ctrl_shape_tool.core.errors import InvalidSelectionError
 from rig_ctrl_shape_tool.ui.color_dialog import ColorPreviewDialog
 from rig_ctrl_shape_tool.ui.controls import DigitAwareDoubleSpinBox, NumericControl
 from rig_ctrl_shape_tool.ui.window import RigCtrlShapeWindow
@@ -24,9 +25,9 @@ class UiInteractionTests(unittest.TestCase):
     def test_context_menu_identifies_one_axis(self) -> None:
         control = NumericControl((1.0, 1.0, 1.0), (0.0, 10.0), context_label="Scale")
         menu, apply_action, reset_action = control._create_context_menu("Scale Y", 1.0)
-        self.assertEqual(menu.actions()[0].text(), "Target : Scale Y")
-        self.assertEqual(apply_action.text(), "APPLY  Scale Y")
-        self.assertEqual(reset_action.text(), "RESET  Scale Y  (1.0000)")
+        self.assertEqual(menu.actions()[0].text(), "対象：Scale Y")
+        self.assertEqual(apply_action.text(), "適用  Scale Y")
+        self.assertEqual(reset_action.text(), "リセット  Scale Y  (1.0000)")
 
     def test_digit_step_follows_cursor_place(self) -> None:
         field = DigitAwareDoubleSpinBox()
@@ -83,7 +84,7 @@ class UiInteractionTests(unittest.TestCase):
         ]
         labels = {button.text() for button in dialog.findChildren(QtWidgets.QPushButton)}
         self.assertEqual([button.toolTip() for button in swatches], [item[0] for item in colors])
-        self.assertTrue({"Apply", "Cancel"}.issubset(labels))
+        self.assertTrue({"適用", "キャンセル"}.issubset(labels))
         self.assertFalse(dialog.isModal())
         self.assertEqual(
             dialog.windowModality(), QtCore.Qt.WindowModality.NonModal
@@ -159,6 +160,36 @@ class UiInteractionTests(unittest.TestCase):
         self.app.processEvents()
         self.assertEqual(emissions, [True])
 
+    def test_direct_edit_checkbox_is_right_of_preview_and_toggles_mode(self) -> None:
+        noop = lambda *args, **kwargs: None
+        toggles = []
+        window = RigCtrlShapeWindow(
+            SimpleNamespace(rotate_x_90=noop, rotate_y_90=noop,
+                            rotate_z_90=noop, apply=noop, apply_value=noop),
+            SimpleNamespace(set_enabled=noop, refresh=noop, is_enabled=False),
+            SimpleNamespace(begin_edit=noop, reset=noop, update_preview=noop,
+                            commit=noop, rollback=noop, get_current_view_data=noop),
+            SimpleNamespace(copy=noop, paste_replace=noop, paste_add=noop),
+            SimpleNamespace(disconnect_selected=noop),
+            SimpleNamespace(update=noop, reset=noop, reset_all=noop,
+                            reset_axis=noop, current_values=lambda: SimpleNamespace(
+                                uniform=1.0, scale=(1.0, 1.0, 1.0),
+                                rotate=(0.0, 0.0, 0.0), move=(0.0, 0.0, 0.0),
+                                line_width=1.0, joint_size=1.0),
+                            begin_preview_edit=noop, end_preview_edit=noop),
+            SimpleNamespace(show=noop),
+            SimpleNamespace(set_enabled=toggles.append),
+        )
+        checkbox = window.findChild(QtWidgets.QCheckBox, "directEditCheckBox")
+        self.assertIsNotNone(checkbox)
+        self.assertTrue(checkbox.isEnabled())
+
+        checkbox.setChecked(True)
+        checkbox.setChecked(False)
+
+        self.assertEqual(toggles, [True, False])
+        window.close()
+
     def test_shape_library_button_is_compact_and_launches_window(self) -> None:
         noop = lambda *args, **kwargs: None
         launched = []
@@ -187,6 +218,94 @@ class UiInteractionTests(unittest.TestCase):
         self.assertEqual(button.styleSheet(), color_button.styleSheet())
         button.click()
         self.assertEqual(launched, [True])
+        window.close()
+
+    def test_color_picker_opens_without_a_controller_selection(self) -> None:
+        noop = lambda *args, **kwargs: None
+        color = SimpleNamespace(
+            begin_edit=lambda: (_ for _ in ()).throw(
+                InvalidSelectionError("no controller")
+            ),
+            reset=noop, update_preview=noop, commit=noop, rollback=noop,
+            get_current_view_data=lambda: (_ for _ in ()).throw(
+                InvalidSelectionError("no controller")
+            ),
+            is_active=False,
+        )
+        window = RigCtrlShapeWindow(
+            SimpleNamespace(rotate_x_90=noop, rotate_y_90=noop,
+                            rotate_z_90=noop, apply=noop, apply_value=noop),
+            SimpleNamespace(set_enabled=noop, refresh=noop, is_enabled=False),
+            color,
+            SimpleNamespace(copy=noop, paste_replace=noop, paste_add=noop),
+            SimpleNamespace(disconnect_selected=noop),
+            SimpleNamespace(update=noop, reset=noop, reset_all=noop,
+                            reset_axis=noop, current_values=noop,
+                            begin_preview_edit=noop, end_preview_edit=noop),
+            SimpleNamespace(show=noop),
+        )
+
+        window.findChild(QtWidgets.QPushButton, "pickColorButton").click()
+        self.app.processEvents()
+
+        self.assertIsNotNone(window._color_dialog)
+        self.assertTrue(window._color_dialog.isVisible())
+        window.close()
+
+    def test_selection_change_retargets_real_time_preview(self) -> None:
+        noop = lambda *args, **kwargs: None
+        preview_updates = []
+        color = SimpleNamespace(
+            begin_edit=noop, reset=noop, update_preview=noop,
+            commit=noop, rollback=noop,
+            get_current_view_data=lambda: (_ for _ in ()).throw(
+                InvalidSelectionError("no controller")
+            ),
+        )
+        window = RigCtrlShapeWindow(
+            SimpleNamespace(rotate_x_90=noop, rotate_y_90=noop,
+                            rotate_z_90=noop, apply=noop, apply_value=noop),
+            SimpleNamespace(set_enabled=noop,
+                            update_preview=lambda: preview_updates.append(True),
+                            is_enabled=True),
+            color,
+            SimpleNamespace(copy=noop, paste_replace=noop, paste_add=noop),
+            SimpleNamespace(disconnect_selected=noop),
+            SimpleNamespace(update=noop, reset=noop, reset_all=noop,
+                            reset_axis=noop, current_values=noop,
+                            begin_preview_edit=noop, end_preview_edit=noop),
+            SimpleNamespace(show=noop),
+        )
+
+        window.handle_selection_changed()
+
+        self.assertEqual(preview_updates, [True])
+        window.close()
+
+    def test_disconnect_passes_keep_name_choice_to_feature(self) -> None:
+        noop = lambda *args, **kwargs: None
+        choices = []
+        window = RigCtrlShapeWindow(
+            SimpleNamespace(rotate_x_90=noop, rotate_y_90=noop,
+                            rotate_z_90=noop, apply=noop, apply_value=noop),
+            SimpleNamespace(set_enabled=noop, update_preview=noop,
+                            is_enabled=False),
+            SimpleNamespace(begin_edit=noop, reset=noop, update_preview=noop,
+                            commit=noop, rollback=noop,
+                            get_current_view_data=noop),
+            SimpleNamespace(copy=noop, paste_replace=noop, paste_add=noop),
+            SimpleNamespace(disconnect_selected=choices.append),
+            SimpleNamespace(update=noop, reset=noop, reset_all=noop,
+                            reset_axis=noop, current_values=noop,
+                            begin_preview_edit=noop, end_preview_edit=noop),
+            SimpleNamespace(show=noop),
+        )
+        window._confirm_disconnect_name = lambda: False
+
+        window._disconnect()
+
+        self.assertEqual(choices, [False])
+        window.setObjectName("")
         window.close()
 
 

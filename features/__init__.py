@@ -7,6 +7,7 @@ _FEATURE_MODULES = {
     "ColorFeature": "color",
     "ControlsFeature": "controls",
     "DisconnectFeature": "disconnect",
+    "DirectEditFeature": "direct_edit",
     "PreviewFeature": "preview",
     "CopyPasteFeature": "copy_paste",
     "TransformFeature": "transform",

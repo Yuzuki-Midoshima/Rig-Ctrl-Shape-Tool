@@ -34,7 +34,9 @@ class TransformValues:
     scale: tuple[float, float, float] = (1.0, 1.0, 1.0)
     rotate: tuple[float, float, float] = (0.0, 0.0, 0.0)
     move: tuple[float, float, float] = (0.0, 0.0, 0.0)
-    line_width: float = 0.0
+    # Match the normal visible curve width. Values of 0 and -1 can both
+    # render as a thinner hairline depending on Maya's viewport settings.
+    line_width: float = 1.0
     joint_size: float = 1.0
 
 

@@ -29,11 +29,11 @@ class CopyPasteFeature:
     def copy(self) -> None:
         controller = self._selection.first_controller()
         if not controller:
-            raise InvalidSelectionError("Select a controller to copy")
+            raise InvalidSelectionError("コピーするコントローラーを選択してください")
         if not self._selection.curve_shapes(controller):
-            raise UnsupportedShapeError("Selected controller has no NURBS curve shape")
+            raise UnsupportedShapeError("選択したコントローラーにNURBSカーブシェイプがありません")
         self._state.copy_buffer.controller = self._selection.long_name(controller)
-        self._scene.show_status("COPIED")
+        self._scene.show_status("コピーしました")
 
     def paste_replace(self) -> None:
         """Replace the copied controller's shapes with the selected shapes."""
@@ -47,22 +47,22 @@ class CopyPasteFeature:
         """Report whether the copied paste target controller is connected."""
         rig = self._state.copy_buffer.controller
         if not rig or not self._scene.exists(rig):
-            raise MissingCopyBufferError("The copied Rig Controller is not available")
+            raise MissingCopyBufferError("コピーしたリグコントローラーがありません")
         return self._connections.has_connections(rig)
 
     def _paste(self, mode: Literal["replace", "add"]) -> None:
         rig = self._state.copy_buffer.controller
         if not rig or not self._scene.exists(rig):
-            raise MissingCopyBufferError("The copied Rig Controller is not available")
+            raise MissingCopyBufferError("コピーしたリグコントローラーがありません")
         visual = self._selection.first_controller()
         if not visual or self._selection.long_name(visual) == self._selection.long_name(rig):
-            raise InvalidSelectionError("Select the new Controller Shape")
+            raise InvalidSelectionError("新しいコントローラーシェイプを選択してください")
         source_shapes = self._selection.curve_shapes(visual)
         rig_shapes = self._selection.curve_shapes(rig)
         if not source_shapes or not rig_shapes:
-            raise UnsupportedShapeError("A valid NURBS curve shape was not found")
+            raise UnsupportedShapeError("有効なNURBSカーブシェイプが見つかりません")
         if self._scene.is_referenced(rig):
-            raise UnsupportedShapeError("Referenced Controller shapes cannot be replaced")
+            raise UnsupportedShapeError("参照されたコントローラーシェイプは置き換えられません")
         self.cancel_sessions()
         settings = self._curves.display_settings(
             rig_shapes[0], CurveDisplayAttributes.ALL
@@ -70,7 +70,7 @@ class CopyPasteFeature:
         try:
             with self._scene.undo_chunk("RigCtrlShapePaste"), self._scene.preserve_selection():
                 if not self._curves.align_position(visual, rig):
-                    raise RuntimeError("Position alignment failed")
+                    raise RuntimeError("位置合わせに失敗しました")
                 definitions = tuple(self._curves.capture(shape) for shape in source_shapes)
                 if mode == "add":
                     target = self._curves.create_add_controller(rig, definitions, settings)
@@ -84,4 +84,5 @@ class CopyPasteFeature:
         except (RuntimeError, ValueError):
             self._scene.rollback_named_undo("RigCtrlShapePaste")
             raise
-        self._scene.show_status(f"PASTED ({mode.upper()})")
+        mode_label = "置き換え" if mode == "replace" else "追加"
+        self._scene.show_status(f"貼り付けました（{mode_label}）")
