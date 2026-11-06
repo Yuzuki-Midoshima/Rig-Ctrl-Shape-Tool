@@ -55,6 +55,7 @@ def show() -> RigCtrlShapeWindow:
     connection_service = ConnectionService()
     window_service = WindowService()
     scene = MayaSceneService()
+    scene.cleanup_legacy_direct_edit_proxies()
     shape_library = ShapeLibraryService()
     transform = TransformFeature(state, selection, scene)
     preview = PreviewFeature(state, selection, scene)
@@ -137,6 +138,7 @@ def show() -> RigCtrlShapeWindow:
         color.rollback()
         preview.rollback()
         direct_edit.finish()
+        scene.ensure_object_mode()
 
     window.closing.connect(close)
     window.refresh_colors()

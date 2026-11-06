@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import maya.cmds as cmds
 from maya.api import OpenMaya as om
@@ -437,6 +438,109 @@ class MayaCurveIntegrationTests(unittest.TestCase):
         self.assertAlmostEqual(after[1] - before[1], 0.0, places=5)
         self.assertAlmostEqual(after[4] - before[4], 0.0, places=5)
         preview.rollback()
+
+    def test_direct_edit_uses_safe_manipulators_and_restores_user_modes(self) -> None:
+        modes = {"Move": 0, "Rotate": 0, "Scale": 0}
+
+        constraints = {"Move": "surface", "Rotate": "edge", "Scale": "none"}
+
+        def context(
+            name, exists=False, query=False, edit=False, mode=None,
+            xformConstraint=None,
+        ):
+            if exists:
+                return True
+            if query:
+                return constraints[name] if xformConstraint else modes[name]
+            if edit:
+                modes[name] = mode
+                constraints[name] = xformConstraint
+
+        with (
+            patch.object(cmds, "manipMoveContext", context),
+            patch.object(cmds, "manipRotateContext", context),
+            patch.object(cmds, "manipScaleContext", context),
+        ):
+            self.scene._use_safe_component_manipulators()
+            self.assertEqual(modes, {"Move": 2, "Rotate": 10, "Scale": 10})
+            self.assertEqual(
+                constraints, {"Move": "none", "Rotate": "none", "Scale": "none"}
+            )
+
+            self.scene._restore_manipulator_modes()
+            self.assertEqual(modes, {"Move": 0, "Rotate": 0, "Scale": 0})
+            self.assertEqual(
+                constraints, {"Move": "surface", "Rotate": "edge", "Scale": "none"}
+            )
+
+    def test_direct_edit_disables_and_restores_weighted_selection(self) -> None:
+        soft = {"value": 1}
+        symmetry_state = {"value": 1}
+
+        def soft_select(query=False, softSelectEnabled=None):
+            if query:
+                return soft["value"]
+            soft["value"] = softSelectEnabled
+
+        def symmetric_modelling(query=False, symmetry=None):
+            if query:
+                return symmetry_state["value"]
+            symmetry_state["value"] = symmetry
+
+        with (
+            patch.object(cmds, "softSelect", soft_select),
+            patch.object(cmds, "symmetricModelling", symmetric_modelling),
+        ):
+            self.scene._disable_weighted_selection()
+            self.assertEqual((soft["value"], symmetry_state["value"]), (0, 0))
+            self.scene._restore_weighted_selection()
+            self.assertEqual((soft["value"], symmetry_state["value"]), (1, 1))
+
+    def test_direct_edit_hilites_curve_while_components_are_selected(self) -> None:
+        controller = self._open_curve("direct_edit_hilite_ctrl")
+        cvs = self.selection.controller_cvs(controller)
+        controller = cmds.ls(controller, long=True)[0]
+
+        self.scene.enter_component_edit(cvs)
+
+        hilited = cmds.ls(hilite=True, long=True) or []
+        self.assertIn(controller, hilited)
+        self.scene.leave_component_edit([controller])
+        self.assertNotIn(controller, cmds.ls(hilite=True, long=True) or [])
+
+    def test_direct_edit_hides_and_restores_viewport_selection_hilite(self) -> None:
+        panel_states = {"modelPanel1": True, "modelPanel2": False}
+
+        def model_editor(
+            panel, exists=False, query=False, edit=False,
+            selectionHiliteDisplay=None, **_kwargs,
+        ):
+            if exists:
+                return panel in panel_states
+            if query:
+                return panel_states[panel]
+            if edit:
+                panel_states[panel] = selectionHiliteDisplay
+
+        with (
+            patch.object(cmds, "getPanel", return_value=list(panel_states)),
+            patch.object(cmds, "modelEditor", model_editor),
+        ):
+            self.scene._hide_viewport_selection_hilite()
+            self.assertEqual(panel_states, {"modelPanel1": False, "modelPanel2": False})
+
+            self.scene._restore_viewport_selection_hilite()
+            self.assertEqual(panel_states, {"modelPanel1": True, "modelPanel2": False})
+
+    def test_ensure_object_mode_preserves_selection(self) -> None:
+        controller = self._open_curve("object_mode_ctrl")
+        cmds.select(controller, replace=True)
+
+        with patch.object(cmds, "selectMode") as select_mode:
+            self.scene.ensure_object_mode()
+
+        select_mode.assert_called_once_with(object=True)
+        self.assertEqual(cmds.ls(selection=True, long=True), [f"|{controller}"])
 
     def test_joint_size_edits_selected_joints_individually_with_preview(self) -> None:
         first = cmds.createNode("joint", name="joint_size_first")

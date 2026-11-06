@@ -14,6 +14,13 @@ from ..maya.utils import is_settable, preserve_selection, warn
 class MayaSceneService:
     preserve_selection = staticmethod(preserve_selection)
 
+    def __init__(self) -> None:
+        self._direct_edit_manip_modes: dict[str, tuple[int, str]] = {}
+        self._direct_edit_hilited_shapes: list[str] = []
+        self._direct_edit_panel_hilites: dict[str, bool] = {}
+        self._direct_edit_soft_select: int | None = None
+        self._direct_edit_symmetry: int | None = None
+
     def exists(self, node: str) -> bool:
         return bool(cmds.objExists(node))
 
@@ -46,8 +53,16 @@ class MayaSceneService:
 
     def enter_component_edit(self, cvs: Sequence[str]) -> None:
         """Select curve CVs and expose Maya's native component manipulators."""
-        cmds.select(list(cvs), replace=True)
+        self._use_safe_component_manipulators()
+        self._disable_weighted_selection()
+        self._hide_viewport_selection_hilite()
         cmds.selectMode(component=True)
+        shapes = list(dict.fromkeys(cv.split(".cv[", 1)[0] for cv in cvs))
+        if self._direct_edit_hilited_shapes:
+            cmds.hilite(self._direct_edit_hilited_shapes, unHilite=True)
+        self._direct_edit_hilited_shapes = shapes
+        cmds.hilite(shapes, replace=True)
+        cmds.select(list(cvs), replace=True)
         cmds.setToolTo("Move")
 
     def pointer_is_over_viewport(self) -> bool:
@@ -58,8 +73,150 @@ class MayaSceneService:
     def leave_component_edit(self, controllers: Sequence[str]) -> None:
         """Return to object selection while retaining manual CV edits."""
         cmds.selectMode(object=True)
+        if self._direct_edit_hilited_shapes:
+            cmds.hilite(self._direct_edit_hilited_shapes, unHilite=True)
+            self._direct_edit_hilited_shapes.clear()
         existing = [node for node in controllers if cmds.objExists(node)]
         cmds.select(existing, replace=True) if existing else cmds.select(clear=True)
+        self._restore_viewport_selection_hilite()
+        self._restore_weighted_selection()
+        self._restore_manipulator_modes()
+
+    def ensure_object_mode(self) -> None:
+        """Leave Maya in object mode without changing the current selection."""
+        cmds.selectMode(object=True)
+
+    def cleanup_legacy_direct_edit_proxies(self) -> None:
+        """Remove temporary nodes left by the retired proxy-edit workflow."""
+        nodes = cmds.ls(
+            "__RigCtrlShapeDirectEdit*",
+            "__RigCtrlShapeDirectDisplay*",
+            type="transform",
+            long=True,
+        ) or []
+        if not nodes:
+            return
+        undo_enabled = bool(cmds.undoInfo(query=True, state=True))
+        try:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=False)
+            cmds.delete(nodes)
+        finally:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=True)
+
+    def _hide_viewport_selection_hilite(self) -> None:
+        """Keep each curve's display color visible during component editing."""
+        if self._direct_edit_panel_hilites:
+            return
+        for panel in cmds.getPanel(type="modelPanel") or []:
+            enabled = bool(
+                cmds.modelEditor(panel, query=True, selectionHiliteDisplay=True)
+            )
+            self._direct_edit_panel_hilites[panel] = enabled
+            if enabled:
+                cmds.modelEditor(
+                    panel, edit=True, selectionHiliteDisplay=False, noUndo=True
+                )
+
+    def _restore_viewport_selection_hilite(self) -> None:
+        for panel, enabled in self._direct_edit_panel_hilites.items():
+            if cmds.modelEditor(panel, exists=True):
+                cmds.modelEditor(
+                    panel,
+                    edit=True,
+                    selectionHiliteDisplay=enabled,
+                    noUndo=True,
+                )
+        self._direct_edit_panel_hilites.clear()
+
+    def _use_safe_component_manipulators(self) -> None:
+        """Use Maya's component modes without inheriting scaled object axes."""
+        if self._direct_edit_manip_modes:
+            return
+        contexts = (
+            ("Move", cmds.manipMoveContext, 2),
+            ("Rotate", cmds.manipRotateContext, 10),
+            ("Scale", cmds.manipScaleContext, 10),
+        )
+        undo_enabled = bool(cmds.undoInfo(query=True, state=True))
+        try:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=False)
+            for name, command, world_mode in contexts:
+                if command(name, exists=True):
+                    self._direct_edit_manip_modes[name] = (
+                        int(command(name, query=True, mode=True)),
+                        str(command(name, query=True, xformConstraint=True)),
+                    )
+                    command(
+                        name, edit=True, mode=world_mode, xformConstraint="none"
+                    )
+        finally:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=True)
+
+    def _restore_manipulator_modes(self) -> None:
+        if not self._direct_edit_manip_modes:
+            return
+        commands = {
+            "Move": cmds.manipMoveContext,
+            "Rotate": cmds.manipRotateContext,
+            "Scale": cmds.manipScaleContext,
+        }
+        undo_enabled = bool(cmds.undoInfo(query=True, state=True))
+        try:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=False)
+            for name, (mode, constraint) in self._direct_edit_manip_modes.items():
+                command = commands[name]
+                if command(name, exists=True):
+                    command(
+                        name,
+                        edit=True,
+                        mode=mode,
+                        xformConstraint=constraint,
+                    )
+        finally:
+            self._direct_edit_manip_modes.clear()
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=True)
+
+    def _disable_weighted_selection(self) -> None:
+        if self._direct_edit_soft_select is not None:
+            return
+        self._direct_edit_soft_select = int(
+            cmds.softSelect(query=True, softSelectEnabled=True)
+        )
+        self._direct_edit_symmetry = int(
+            cmds.symmetricModelling(query=True, symmetry=True)
+        )
+        undo_enabled = bool(cmds.undoInfo(query=True, state=True))
+        try:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=False)
+            if self._direct_edit_soft_select:
+                cmds.softSelect(softSelectEnabled=0)
+            if self._direct_edit_symmetry:
+                cmds.symmetricModelling(symmetry=0)
+        finally:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=True)
+
+    def _restore_weighted_selection(self) -> None:
+        if self._direct_edit_soft_select is None:
+            return
+        undo_enabled = bool(cmds.undoInfo(query=True, state=True))
+        try:
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=False)
+            cmds.softSelect(softSelectEnabled=self._direct_edit_soft_select)
+            cmds.symmetricModelling(symmetry=self._direct_edit_symmetry or 0)
+        finally:
+            self._direct_edit_soft_select = None
+            self._direct_edit_symmetry = None
+            if undo_enabled:
+                cmds.undoInfo(stateWithoutFlush=True)
 
     def line_width(self, shape: str) -> float | None:
         plug = f"{shape}.lineWidth"

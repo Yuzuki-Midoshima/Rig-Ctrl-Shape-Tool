@@ -18,6 +18,14 @@ class DigitAwareDoubleSpinBox(QtWidgets.QDoubleSpinBox):
         self._active_step = 0.1
         self.lineEdit().installEventFilter(self)
 
+    def focusInEvent(self, event: QtGui.QFocusEvent) -> None:
+        super().focusInEvent(event)
+        if event.reason() == QtCore.Qt.FocusReason.MouseFocusReason:
+            # Run after the mouse click has positioned the caret.  This makes
+            # the first click start a replacement edit; another click while
+            # already focused can still target an individual digit.
+            QtCore.QTimer.singleShot(0, self.lineEdit().selectAll)
+
     def _step_for_position(self, cursor: int) -> float:
         editor = self.lineEdit()
         text = editor.text()
@@ -46,7 +54,93 @@ class DigitAwareDoubleSpinBox(QtWidgets.QDoubleSpinBox):
     def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
         editor = self.lineEdit()
         if watched is editor:
-            if event.type() in (QtCore.QEvent.Type.MouseButtonPress,
+            if event.type() == QtCore.QEvent.Type.ShortcutOverride:
+                # Maya assigns hotkeys to punctuation such as period.  Claim
+                # numeric editing keys while the line edit has focus so Maya's
+                # application-level shortcut handling cannot consume the
+                # decimal point before QLineEdit receives its key event.
+                numeric_keys = {
+                    QtCore.Qt.Key.Key_0, QtCore.Qt.Key.Key_1,
+                    QtCore.Qt.Key.Key_2, QtCore.Qt.Key.Key_3,
+                    QtCore.Qt.Key.Key_4, QtCore.Qt.Key.Key_5,
+                    QtCore.Qt.Key.Key_6, QtCore.Qt.Key.Key_7,
+                    QtCore.Qt.Key.Key_8, QtCore.Qt.Key.Key_9,
+                    QtCore.Qt.Key.Key_Period, QtCore.Qt.Key.Key_Comma,
+                    QtCore.Qt.Key.Key_Plus, QtCore.Qt.Key.Key_Minus,
+                    QtCore.Qt.Key.Key_Backspace, QtCore.Qt.Key.Key_Delete,
+                }
+                if event.key() in numeric_keys:
+                    event.accept()
+                    return False
+            elif event.type() == QtCore.QEvent.Type.KeyPress:
+                # A click at the far left places the caret before the rendered
+                # value (for example ``|0.0000``).  Inserting ``.25`` or
+                # ``0.25`` there would make an invalid string, so QDoubleSpinBox
+                # rejects the keystroke.  Treat typing at that specific
+                # position as starting a replacement value, as Maya numeric
+                # fields do.
+                replacement_keys = {
+                    QtCore.Qt.Key.Key_0, QtCore.Qt.Key.Key_1,
+                    QtCore.Qt.Key.Key_2, QtCore.Qt.Key.Key_3,
+                    QtCore.Qt.Key.Key_4, QtCore.Qt.Key.Key_5,
+                    QtCore.Qt.Key.Key_6, QtCore.Qt.Key.Key_7,
+                    QtCore.Qt.Key.Key_8, QtCore.Qt.Key.Key_9,
+                    QtCore.Qt.Key.Key_Period, QtCore.Qt.Key.Key_Comma,
+                    QtCore.Qt.Key.Key_Plus, QtCore.Qt.Key.Key_Minus,
+                }
+                if (
+                    event.key() in replacement_keys
+                    and editor.cursorPosition() == 0
+                    and not editor.hasSelectedText()
+                ):
+                    editor.selectAll()
+                elif editor.hasSelectedText() and event.key() in (
+                    QtCore.Qt.Key.Key_Period,
+                    QtCore.Qt.Key.Key_Comma,
+                ):
+                    # Bypass QDoubleSpinBox's validator for the intermediate
+                    # decimal-only text.  Start a new zero-based fractional
+                    # value and consume the key ourselves.
+                    self.setValue(0.0)
+                    editor.setCursorPosition(editor.text().find(".") + 1)
+                    return True
+                elif not editor.hasSelectedText():
+                    text = editor.text()
+                    cursor = editor.cursorPosition()
+                    decimal = text.find(".")
+                    if event.key() in (
+                        QtCore.Qt.Key.Key_Period,
+                        QtCore.Qt.Key.Key_Comma,
+                    ) and decimal >= 0:
+                        # There can only be one decimal separator.  Pressing it
+                        # again means "edit the fractional part", not insert a
+                        # second separator that the validator will reject.
+                        editor.setCursorPosition(decimal + 1)
+                        return True
+                    if (
+                        QtCore.Qt.Key.Key_0 <= event.key() <= QtCore.Qt.Key.Key_9
+                        and decimal >= 0
+                        and cursor > decimal
+                    ):
+                        # The display already contains the configured number
+                        # of decimal places (0.0000).  Replace the digit under
+                        # the caret instead of trying to insert a fifth place.
+                        # At the end of the text there is no digit to the
+                        # right, so replace the final fractional digit.
+                        digit = cursor if cursor < len(text) else cursor - 1
+                        if digit > decimal and text[digit].isdigit():
+                            replacement = str(event.key() - QtCore.Qt.Key.Key_0)
+                            edited = text[:digit] + replacement + text[digit + 1:]
+                            try:
+                                value = float(edited)
+                            except ValueError:
+                                return True
+                            self.setValue(value)
+                            editor.setCursorPosition(
+                                min(digit + 1, len(editor.text()))
+                            )
+                            return True
+            elif event.type() in (QtCore.QEvent.Type.MouseButtonPress,
                                 QtCore.QEvent.Type.MouseButtonRelease):
                 cursor = editor.cursorPositionAt(event.position().toPoint())
                 self._remember_position(cursor)
@@ -172,8 +266,25 @@ class NumericControl(QtWidgets.QWidget):
     def _from_fields(self, _value: float | None = None) -> None:
         if self._syncing:
             return
-        self.set_values(self.values())
-        self.valuesChanged.emit(self.values())
+        # Do not call set_values() here.  QDoubleSpinBox emits valueChanged
+        # while its line edit is still being edited; writing the value back to
+        # that same field normalizes the text and moves its caret after every
+        # keystroke.  In Maya this made editing from the beginning of the text
+        # appear to reject keyboard input.
+        values = self.values()
+        self._syncing = True
+        try:
+            for slider, value in zip(self.sliders, values):
+                slider_value = self._value_to_slider(value)
+                if self._slider_center is None:
+                    slider.setRange(
+                        min(slider.minimum(), slider_value),
+                        max(slider.maximum(), slider_value),
+                    )
+                slider.setValue(slider_value)
+        finally:
+            self._syncing = False
+        self.valuesChanged.emit(values)
 
     def _from_sliders(self) -> None:
         if self._syncing:

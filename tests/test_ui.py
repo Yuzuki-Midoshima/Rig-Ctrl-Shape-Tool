@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtTest, QtWidgets
 
 from rig_ctrl_shape_tool.app import _find_existing_window
 from rig_ctrl_shape_tool.core.errors import InvalidSelectionError
@@ -57,6 +57,95 @@ class UiInteractionTests(unittest.TestCase):
             control.sliders[1].value(),
             round(2.5 * control._SLIDER_FACTOR),
         )
+
+    def test_field_edit_does_not_rewrite_text_or_move_caret(self) -> None:
+        control = NumericControl((0.0,), (-10.0, 10.0), context_label="Move")
+        field = control.fields[0]
+        editor = field.lineEdit()
+        editor.setText("2.0000")
+        editor.setCursorPosition(0)
+
+        control._from_fields()
+
+        self.assertEqual(editor.text(), "2.0000")
+        self.assertEqual(editor.cursorPosition(), 0)
+        self.assertEqual(
+            control.sliders[0].value(),
+            round(2.0 * control._SLIDER_FACTOR),
+        )
+
+    def test_decimal_key_is_claimed_from_maya_shortcuts(self) -> None:
+        field = DigitAwareDoubleSpinBox()
+        editor = field.lineEdit()
+        event = QtGui.QKeyEvent(
+            QtCore.QEvent.Type.ShortcutOverride,
+            QtCore.Qt.Key.Key_Period,
+            QtCore.Qt.KeyboardModifier.NoModifier,
+            ".",
+        )
+
+        QtWidgets.QApplication.sendEvent(editor, event)
+
+        self.assertTrue(event.isAccepted())
+
+    def test_decimal_typed_at_start_replaces_existing_value(self) -> None:
+        field = DigitAwareDoubleSpinBox()
+        field.setDecimals(4)
+        editor = field.lineEdit()
+        editor.setCursorPosition(0)
+
+        QtTest.QTest.keyClicks(editor, ".25")
+
+        self.assertAlmostEqual(field.value(), 0.25)
+
+    def test_typing_over_fractional_digit_replaces_it(self) -> None:
+        field = DigitAwareDoubleSpinBox()
+        field.setDecimals(4)
+        editor = field.lineEdit()
+        editor.setCursorPosition(2)
+
+        QtTest.QTest.keyClick(editor, QtCore.Qt.Key.Key_7)
+
+        self.assertEqual(editor.text(), "0.7000")
+        self.assertAlmostEqual(field.value(), 0.7)
+
+    def test_typing_at_fractional_end_replaces_last_digit(self) -> None:
+        field = DigitAwareDoubleSpinBox()
+        field.setDecimals(4)
+        editor = field.lineEdit()
+        editor.setCursorPosition(len(editor.text()))
+
+        QtTest.QTest.keyClick(editor, QtCore.Qt.Key.Key_7)
+
+        self.assertEqual(editor.text(), "0.0007")
+        self.assertAlmostEqual(field.value(), 0.0007)
+
+    def test_existing_decimal_key_moves_to_fractional_part(self) -> None:
+        field = DigitAwareDoubleSpinBox()
+        field.setDecimals(4)
+        editor = field.lineEdit()
+        editor.setCursorPosition(len(editor.text()))
+
+        QtTest.QTest.keyClick(editor, QtCore.Qt.Key.Key_Period)
+
+        self.assertEqual(editor.cursorPosition(), 2)
+
+    def test_first_click_focus_selects_the_existing_value(self) -> None:
+        other = QtWidgets.QLineEdit()
+        field = DigitAwareDoubleSpinBox()
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(container)
+        layout.addWidget(other)
+        layout.addWidget(field)
+        container.show()
+        other.setFocus()
+        self.app.processEvents()
+
+        QtTest.QTest.mouseClick(field.lineEdit(), QtCore.Qt.MouseButton.LeftButton)
+        self.app.processEvents()
+
+        self.assertEqual(field.lineEdit().selectedText(), field.lineEdit().text())
+        container.close()
 
     def test_joint_size_default_is_at_slider_center(self) -> None:
         control = NumericControl(
